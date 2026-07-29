@@ -29,9 +29,9 @@ Token accounting note: reasoning tokens count in `usage` — cost/metering must 
 
 `GET /v1/models` returned 102 models including `nvidia/llama-3.1-nemotron-70b-instruct`, but invoking that model returns `404 {"title":"Not Found","detail":"Function ... Not found"}`. **Pin models by verified invocation, not by catalog listing**, and re-verify pinned models before demos.
 
-## Verified: the Helm-values swap (no code changes)
+## Running a self-hosted deployment's language model on Nemotron
 
-Demonstrated live 2026-07-29 on a self-hosted deployment — a full agentic ingest completed with the enrichment LLM on the hosted Nemotron endpoint, flipped purely via chart values:
+A self-hosted GroundX deployment can point its document-enrichment model at a hosted Nemotron endpoint with a values-file change — no code involved. In our testing (July 2026) a full document ingest completed with this configuration:
 
 ```yaml
 engines:
@@ -49,6 +49,6 @@ engines:
 
 `helm upgrade` with this overlay switches the summary tier to Nemotron; removing it reverts to the bundled self-hosted LLM. Notes: `engineId` must be a **verified-invocable** NIM model (see Gotcha 2); reasoning models work through the standard OpenAI-shaped engine when `maxOutputTokens` is generous — `/no_think` is an optimization, not a requirement, for this path.
 
-## Implication for GroundX's summary engine
+## Summary
 
-GroundX's LLM tier is engine-agnostic (OpenAI-compatible engines with a configurable base URL), so pointing it at a Nemotron NIM is configuration — but the `/no_think` system-message requirement means the engine config for reasoning-family Nemotron models must inject that system message (or a non-reasoning Nemotron model must be pinned). This is the summary-engine validation finding; see the demo-kit change log for the follow-up decision.
+GroundX's language-model layer speaks the standard OpenAI-compatible API with a configurable endpoint, so pointing it at Nemotron is a configuration change. The one behavior to plan for: Nemotron's reasoning-family models need either the `/no_think` system message or a generous output-token budget, or responses come back empty (Gotcha 1 above).

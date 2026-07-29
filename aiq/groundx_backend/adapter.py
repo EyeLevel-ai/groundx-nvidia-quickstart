@@ -12,9 +12,9 @@ Collections map to GroundX buckets (collection_name -> bucket name, resolved
 once and cached). Every chunk carries page-level provenance from GroundX
 bounding boxes, satisfying the knowledge layer's strict citation contract.
 
-DRAFT status: written against aiq_agent.knowledge schema as of 2026-07-29;
-full validation inside an AI-Q checkout is tracked in the demo-kit plan
-(STRETCH). The API key travels only in the X-API-Key header.
+Written against the aiq_agent knowledge-layer contract as of July 2026;
+validate inside an AI-Q checkout before production use. The API key travels
+only in the X-API-Key header.
 """
 
 from __future__ import annotations

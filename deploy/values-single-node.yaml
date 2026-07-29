@@ -1,0 +1,47 @@
+# Settings that make the full GroundX stack fit on one machine with one GPU.
+# Demo credentials below match the bundled databases installed by
+# single-node-install.sh — CHANGE THEM for anything beyond a demo.
+
+cache: {node: eyelevel-cpu-only, metrics: {node: eyelevel-cpu-only}}
+groundx: {node: eyelevel-cpu-only}
+layout:
+  api: {node: eyelevel-cpu-only}
+  correct: {node: eyelevel-cpu-only}
+  inference:
+    node: eyelevel-cpu-only
+    workers: 2
+    resources:
+      limits: {memory: 12Gi, nvidia.com/gpu: 1}
+      requests: {cpu: 300m, memory: 2Gi, nvidia.com/gpu: 1}
+  map: {node: eyelevel-cpu-only}
+  ocr: {node: eyelevel-cpu-only}
+  process: {node: eyelevel-cpu-only}
+  save: {node: eyelevel-cpu-only}
+layoutWebhook: {node: eyelevel-cpu-only}
+metrics: {node: eyelevel-cpu-only}
+preProcess: {node: eyelevel-cpu-only}
+process: {node: eyelevel-cpu-only}
+queue: {node: eyelevel-cpu-only}
+ranker:
+  api: {node: eyelevel-cpu-only}
+  inference:
+    node: eyelevel-cpu-only
+    workers: 2
+    resources:
+      limits: {nvidia.com/gpu: 1}
+      requests: {cpu: 300m, memory: 1Gi, nvidia.com/gpu: 1}
+summary:
+  api: {node: eyelevel-cpu-only}
+  inference:
+    node: eyelevel-cpu-only
+    replicas: {desired: 1, min: 1, max: 1}
+summaryClient: {node: eyelevel-cpu-only}
+upload: {node: eyelevel-cpu-only}
+db:
+  username: root
+  password: password
+  privilegedUsername: root
+  privilegedPassword: password
+file:
+  username: minio
+  password: minio123

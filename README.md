@@ -1,72 +1,64 @@
-# GroundX × NVIDIA Quickstart
+# GroundX + NVIDIA Quickstart
 
-Run a [NeMo Agent Toolkit](https://docs.nvidia.com/nemo/agent-toolkit/latest/index.html) (v1.8+) agent that answers questions over complex documents using **GroundX** as its document-intelligence layer — connected through the [GroundX MCP server](https://docs.groundx.ai/documentation/agent-harness/connect-hosted-mcp-tools) — with a hosted **Nemotron** NIM endpoint as the agent's language model.
+An AI agent that answers questions about your documents and cites the exact page. Built from three parts, connected by one small config file:
 
-Verified end-to-end 2026-07-29: agent resolves the demo bucket, searches it, and answers with a page-level citation (IRS 1040 instructions, standard deduction, page 35).
+- [NVIDIA NeMo Agent Toolkit](https://docs.nvidia.com/nemo/agent-toolkit/latest/index.html) — runs the agent
+- [NVIDIA Nemotron](https://build.nvidia.com) — the language model, on NVIDIA's hosted endpoints
+- [GroundX](https://docs.groundx.ai) — reads and searches the documents, via its [MCP server](https://docs.groundx.ai/documentation/agent-harness/connect-hosted-mcp-tools)
 
-**Time to first cited answer: ~15 minutes.** No GroundX engineer required.
+## What you need
 
-## What this demonstrates
-
-1. **Zero-glue integration** — the agent uses GroundX's `search` and `ingest` tools via MCP, natively supported by NeMo Agent Toolkit v1.3. No adapters, no forked code.
-2. **Nemotron in the loop** — the agent LLM is a build.nvidia.com hosted Nemotron NIM endpoint; the same OpenAI-compatible endpoint can also drive GroundX's own ingestion-time enrichment tier (see `docs/nemotron-engine.md`).
-3. **Inspectable retrieval** — every answer carries page-level citations. The `inspect` step dumps GroundX's X-Ray output for a page: per-element structured JSON (summaries, keywords, multiple text renderings, source-page provenance). The retriever is not a black box.
-
-## Prerequisites
-
-- Python 3.11+
+- Python 3.11 or newer
 - An NVIDIA API key — free at [build.nvidia.com](https://build.nvidia.com)
-- A GroundX API key — from [dashboard.eyelevel.ai](https://dashboard.eyelevel.ai)
+- A GroundX API key — free at [dashboard.groundx.ai](https://dashboard.groundx.ai)
 
-## Quickstart
+## Run it
 
 ```bash
 git clone https://github.com/EyeLevel-ai/groundx-nvidia-quickstart
 cd groundx-nvidia-quickstart
-cp .env.example .env   # add your two keys
-pip install -r requirements.txt
-python scripts/run_agent.py "What is the total baggage allowance for a business-class transatlantic ticket?"
+cp .env.example .env          # put your two keys in .env
+python -m venv .venv && .venv/bin/pip install -r requirements.txt
 ```
 
-The demo corpus is pre-ingested — your first query returns a cited answer immediately. To ingest your own documents:
+**1. Load a document** (the sample is the IRS Form 1040 instructions — 100+ pages of dense tables; processing takes a few minutes):
 
 ```bash
-python scripts/ingest.py path/to/your.pdf
-python scripts/run_agent.py "your question about your document"
+.venv/bin/python scripts/ingest.py
 ```
 
-## Data flow
+**2. Ask a question:**
 
-| Configuration | Where your documents go | Where inference runs |
+```bash
+scripts/run_agent.sh "What is the standard deduction for married filing jointly? Cite the page."
+```
+
+The agent finds the answer in the document library and cites the page it came from.
+
+**3. Use your own documents:**
+
+```bash
+.venv/bin/python scripts/ingest.py https://example.com/your-document.pdf
+scripts/run_agent.sh "a question about your document"
+```
+
+Prefer a notebook? [`notebooks/quickstart.ipynb`](notebooks/quickstart.ipynb) walks the same steps, plus a raw-REST example.
+
+## Where your data goes
+
+| Setup | Your documents | The model |
 |---|---|---|
-| Default (this quickstart) | GroundX hosted service (api.groundx.ai) | Agent LLM: NVIDIA-hosted Nemotron endpoint |
-| Self-hosted GroundX | Your own cluster — [air-gapped Helm deployment](https://github.com/eyelevelai/groundx-on-prem), no external runtime dependencies | Your GPUs; agent LLM configurable to a local NIM |
+| This quickstart | GroundX's hosted service; delete anytime with `scripts/cleanup.py` | NVIDIA's hosted Nemotron endpoint receives only retrieved text passages, never files |
+| Self-hosted | Your own Kubernetes cluster — no external services at runtime; suitable for air-gapped environments ([deployment guide](https://github.com/eyelevelai/groundx-on-prem), [single-node install script](deploy/)) | Your choice: a model in your cluster, or any OpenAI-compatible endpoint |
 
-Documents ingested to the hosted demo bucket can be deleted at any time via `scripts/cleanup.py` or the GroundX API. Nothing in this quickstart sends your documents to NVIDIA; the agent LLM receives only retrieved text chunks at question time.
-
-## Ownership and compatibility
-
-This repo is maintained by the GroundX team (EyeLevel/Valantor). We own compatibility with **NeMo Agent Toolkit v1.3** and will re-certify against new toolkit releases within 30 days; issues are triaged here, not against NVIDIA's repos.
-
-## Repo layout
-
-```
-configs/     NeMo Agent Toolkit workflow config (MCP wiring, Nemotron LLM)
-scripts/     run_agent.py, ingest.py, cleanup.py
-notebooks/   quickstart.ipynb — the 5-minute guided path
-docs/        nemotron-engine.md (GroundX enrichment on Nemotron), architecture notes
-```
+API keys travel only in connection headers — never in prompts, tool arguments, or logs.
 
 ## Troubleshooting
 
-| Symptom | Cause / fix |
+| Symptom | Fix |
 |---|---|
-| `mcp_client not found` at validate | Install the MCP plugin: `pip install "nvidia-nat[mcp]"` (included in requirements.txt) |
-| `401 Unauthorized` at `/mcp` | The header field is `custom_headers` (not `headers`) under `server:` in the workflow config |
-| Model context-length 400 error after a search | Keep `additional_instructions` telling the agent to pass `"n": 3, "verbosity": 1` to `search_content` — default responses are large |
-| `Session termination failed: 401` warning at exit | Cosmetic — the server rejects the close handshake after successful tool calls; safe to ignore |
-| Agent searches the wrong bucket | Name demo buckets literally (e.g. `irs-tax-documents`) and run demos in a clean account without engineering test buckets |
-
-## Status
-
-Work in progress — built as part of the GroundX × NVIDIA demo kit (private during construction; gated public release).
+| `mcp_client not found` when validating the config | `pip install "nvidia-nat[mcp]"` (already in requirements.txt) |
+| `401 Unauthorized` connecting to GroundX | The header block in `configs/groundx_agent.yml` must be `custom_headers`, and `GROUNDX_API_KEY` must be set in `.env` |
+| Model error about context length after a search | Keep the `additional_instructions` block in the config — it tells the agent to request small search responses |
+| `Session termination failed: 401` warning at exit | Harmless; appears after the tools have already succeeded |
+| Agent searches the wrong bucket | Ask questions that name the bucket, or keep the account free of unrelated buckets |
