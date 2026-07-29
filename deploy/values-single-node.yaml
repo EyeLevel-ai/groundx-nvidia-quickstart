@@ -1,10 +1,15 @@
-# Complete settings for running the full GroundX stack on one machine with one
-# NVIDIA GPU (48GB). This is the only values file the install uses.
+# GroundX on one GPU machine, using NVIDIA's hosted Nemotron as the language model.
 #
-# The credentials below are DEMO credentials matching the bundled databases
-# that single-node-install.sh sets up. Change all of them for anything beyond
-# a demo. The license and admin values are placeholders accepted by current
-# chart versions.
+# ── REQUIRED TO CHANGE: nothing in this file. ────────────────────────────────
+#    The one required input is your NVIDIA API key, which the install script
+#    passes in for you (export NVIDIA_API_KEY before running it).
+#
+# ── SUGGESTED TO CHANGE (fine to skip for a demo): ───────────────────────────
+#    admin.email / admin.password        your admin login
+#    db.* and file.* passwords           must then also be changed in the
+#                                        backing-service settings the installer
+#                                        uses (see single-node-install.sh)
+# ──────────────────────────────────────────────────────────────────────────────
 
 licenseKey: "00000000-0000-0000-0000-000000000000"
 
@@ -18,7 +23,31 @@ cluster:
   pvClass: eyelevel-pv
   type: minikube
 
-# --- Everything runs on the one node -----------------------------------------
+# --- The language model: NVIDIA-hosted Nemotron -------------------------------
+# This block is what points GroundX's document-enrichment calls at NVIDIA's
+# hosted model instead of running a language model locally. The API key is
+# injected by the install script (--set engines.default.apiKey=...).
+# Running the model locally instead is a production option covered in the main
+# deployment repo — not this quickstart.
+engines:
+  default:
+    engineId: nvidia/llama-3.3-nemotron-super-49b-v1.5
+    baseUrl: https://integrate.api.nvidia.com/v1
+    service: openai
+    vision: false
+    maxInputTokens: 100000
+    maxOutputTokens: 8192
+    maxRequests: 8
+    requestLimit: 8
+
+# The bundled local language model is OFF — Nemotron above replaces it.
+# This frees ~19GB of GPU memory for the two models that do run locally.
+summary:
+  api: {enabled: false}
+  inference: {enabled: false, node: eyelevel-cpu-only}
+summaryClient: {node: eyelevel-cpu-only}
+
+# --- Everything runs on the one node ------------------------------------------
 # The chart normally spreads services across labeled machine groups; here every
 # service is pinned to the single node's label.
 cache: {node: eyelevel-cpu-only, metrics: {node: eyelevel-cpu-only}}
@@ -28,9 +57,9 @@ layout:
   correct: {node: eyelevel-cpu-only}
   inference:
     node: eyelevel-cpu-only
-    # workers capped so the vision model's GPU memory use stays ~2GB;
-    # the GPU is shared with the language model and the reranker.
-    workers: 2
+    # 4 vision-model workers (~1GB GPU memory each). With no local language
+    # model, the GPU has room to spare — raise this on bigger corpora.
+    workers: 4
     resources:
       limits: {memory: 12Gi, nvidia.com/gpu: 1}
       requests: {cpu: 300m, memory: 2Gi, nvidia.com/gpu: 1}
@@ -47,22 +76,15 @@ ranker:
   api: {node: eyelevel-cpu-only}
   inference:
     node: eyelevel-cpu-only
-    workers: 2
+    workers: 4
     resources:
       limits: {nvidia.com/gpu: 1}
       requests: {cpu: 300m, memory: 1Gi, nvidia.com/gpu: 1}
-summary:
-  api: {node: eyelevel-cpu-only}
-  inference:
-    node: eyelevel-cpu-only
-    # one replica of the language model (~19GB GPU memory)
-    replicas: {desired: 1, min: 1, max: 1}
-summaryClient: {node: eyelevel-cpu-only}
 upload: {node: eyelevel-cpu-only}
 
-# --- Credentials for the bundled databases ------------------------------------
-# These must match what the backing services were installed with; the values
-# here match the public example settings used by single-node-install.sh.
+# --- Credentials for the bundled databases -------------------------------------
+# Must match what the backing services were installed with (they do, for the
+# public example settings single-node-install.sh uses).
 db:
   username: root
   password: password

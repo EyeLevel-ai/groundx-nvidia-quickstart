@@ -1,23 +1,35 @@
 #!/usr/bin/env bash
-# Install a complete self-hosted GroundX on ONE machine with ONE NVIDIA GPU.
+# Install GroundX on ONE machine with ONE NVIDIA GPU, using NVIDIA's hosted
+# Nemotron as the language model.
 #
-# Tested July 2026 on: Ubuntu 22.04, NVIDIA L40S (48GB), 8 vCPU, 64GB RAM,
-# 500GB disk, Docker + NVIDIA Container Toolkit preinstalled (an AWS
-# g6e.2xlarge with the Deep Learning Base GPU AMI matches this exactly).
+# ── REQUIRED before running ──────────────────────────────────────────────────
+#   export NVIDIA_API_KEY=nvapi-...     free at https://build.nvidia.com
+#   That's it. Everything else has working defaults.
+# ── OPTIONAL ─────────────────────────────────────────────────────────────────
+#   Demo passwords live in values-single-node.yaml (see its header).
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# Machine: Ubuntu 22.04, one NVIDIA GPU (tested on a 48GB L40S; ~24GB should
+# fit this profile), 8 CPU cores, 64GB RAM, 500GB disk, Docker + NVIDIA
+# Container Toolkit installed. An AWS g6e.2xlarge with the Deep Learning Base
+# GPU AMI matches exactly.
 #
 # What it does, in order:
 #   1. Creates a single-node Kubernetes cluster (minikube) with GPU access
 #   2. Installs the four backing services GroundX needs: MySQL, MinIO
 #      (object storage), OpenSearch, Kafka
-#   3. Configures the GPU to be shared by GroundX's three model services
-#   4. Installs GroundX itself from the public Helm chart
+#   3. Configures the GPU to be shared by GroundX's two local models
+#      (the document vision model and the search reranker)
+#   4. Installs GroundX, pointed at NVIDIA's hosted Nemotron for enrichment
 #
-# Takes roughly 30-45 minutes, most of it downloading images and model weights.
-# Everything is pulled from public registries; no credentials required.
+# 30-45 minutes, mostly downloads. Images and weights pull from public
+# registries — no registry accounts needed.
 #
-# This profile is for demos and evaluation. Production installs use dedicated
-# GPU node groups — see https://github.com/eyelevelai/groundx-on-prem
+# This profile is for demos and evaluation. Production installs (including
+# running the language model locally) use dedicated GPU node groups — see
+# https://github.com/eyelevelai/groundx-on-prem
 set -euo pipefail
+: "${NVIDIA_API_KEY:?export NVIDIA_API_KEY first (free at build.nvidia.com)}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 VALUES="$HERE/values-single-node.yaml"
 
@@ -100,8 +112,11 @@ kubectl label node minikube nvidia.com/gpu.present=true \
 sleep 25
 echo "GPU slots available: $(kubectl get node minikube -o jsonpath='{.status.allocatable.nvidia\.com/gpu}')"
 
-# --- 4. GroundX itself --------------------------------------------------------
-helm install groundx groundx/groundx -n eyelevel -f "$VALUES"
+# --- 4. GroundX itself, using NVIDIA's hosted Nemotron -------------------------
+# The values file selects the Nemotron model and endpoint; the API key is
+# injected here so it never sits in a file.
+helm install groundx groundx/groundx -n eyelevel -f "$VALUES" \
+  --set engines.default.apiKey="$NVIDIA_API_KEY"
 
 # On a fully-packed single node, the default rolling-update strategy deadlocks
 # any future config change; terminate-then-start avoids that.

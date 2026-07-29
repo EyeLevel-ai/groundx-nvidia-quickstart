@@ -48,10 +48,10 @@ Prefer a notebook? [`notebooks/quickstart.ipynb`](notebooks/quickstart.ipynb) wa
 
 | Setup | Your documents | The model |
 |---|---|---|
-| This quickstart | GroundX's hosted service; delete anytime with `scripts/cleanup.py` | NVIDIA's hosted Nemotron endpoint receives only retrieved text passages, never files |
-| Self-hosted | Your own Kubernetes cluster — no external services at runtime; suitable for air-gapped environments ([deployment guide](https://github.com/eyelevelai/groundx-on-prem), [single-node install script](deploy/)) | Your choice: a model in your cluster, or any OpenAI-compatible endpoint |
+| This quickstart | GroundX's hosted service; delete anytime with `scripts/cleanup.py` | NVIDIA's hosted Nemotron receives only retrieved text passages, never files |
+| Self-hosted ([one-machine install](deploy/)) | Stay on your own machine | NVIDIA's hosted Nemotron receives only text passages during document processing |
 
-API keys travel only in connection headers — never in prompts, tool arguments, or logs.
+API keys travel only in connection headers — never in prompts, tool arguments, or logs. Fully local deployments (model included, air-gap capable) are a production option in the [main deployment repo](https://github.com/eyelevelai/groundx-on-prem).
 
 ## Troubleshooting
 

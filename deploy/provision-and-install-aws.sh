@@ -1,18 +1,27 @@
 #!/usr/bin/env bash
-# End to end: create a GPU machine on AWS, then install GroundX on it.
+# End to end: create a GPU machine on AWS, then install GroundX on it,
+# using NVIDIA's hosted Nemotron as the language model.
 #
-# Prerequisites (once per AWS account):
-#   - AWS CLI logged in with permission to launch EC2 instances
-#   - A subnet with internet access, and a security group (no inbound needed)
-#   - An instance profile that allows Systems Manager access, so this script
-#     can run commands on the machine without SSH keys
-#     (AWS's "AmazonSSMRoleForInstancesQuickSetup" works)
+# ── REQUIRED ─────────────────────────────────────────────────────────────────
+#   export NVIDIA_API_KEY=nvapi-...       free at https://build.nvidia.com
+#   export SUBNET_ID=subnet-...           a subnet with internet access
+#   export SECURITY_GROUP_ID=sg-...       no inbound rules needed
+#   AWS CLI logged in, allowed to launch EC2 instances
+#   An instance profile allowing Systems Manager access (the default
+#   "AmazonSSMRoleForInstancesQuickSetup" works) — that's how this script
+#   runs commands on the machine, no SSH keys involved
+# ── OPTIONAL ─────────────────────────────────────────────────────────────────
+#   INSTANCE_TYPE      default g6e.2xlarge (~$2.25/hr — stop it when idle)
+#   INSTANCE_PROFILE   default AmazonSSMRoleForInstancesQuickSetup
+# ─────────────────────────────────────────────────────────────────────────────
 #
-# Usage:
-#   SUBNET_ID=subnet-xxxx SECURITY_GROUP_ID=sg-xxxx ./provision-and-install-aws.sh
+# Usage:  ./provision-and-install-aws.sh
 #
-# Cost: a g6e.2xlarge is ~$2.25/hour. Stop the instance when not in use.
+# Note: your NVIDIA key is delivered to the machine through AWS Systems
+# Manager and is visible in your own account's command history. Use your
+# secrets manager instead for anything beyond a demo.
 set -euo pipefail
+: "${NVIDIA_API_KEY:?export NVIDIA_API_KEY first (free at build.nvidia.com)}"
 : "${SUBNET_ID:?set SUBNET_ID}"
 : "${SECURITY_GROUP_ID:?set SECURITY_GROUP_ID}"
 INSTANCE_TYPE="${INSTANCE_TYPE:-g6e.2xlarge}"
@@ -53,7 +62,7 @@ CMD=$(aws ssm send-command --instance-ids "$INSTANCE" \
 \"echo $SCRIPT_B64 | base64 -d > /home/ubuntu/deploy/single-node-install.sh\",\
 \"echo $VALUES_B64 | base64 -d > /home/ubuntu/deploy/values-single-node.yaml\",\
 \"chmod 755 /home/ubuntu/deploy/single-node-install.sh && chown -R ubuntu:ubuntu /home/ubuntu/deploy\",\
-\"sudo -u ubuntu /home/ubuntu/deploy/single-node-install.sh 2>&1 | tail -30\"]" \
+\"sudo -u ubuntu env NVIDIA_API_KEY=$NVIDIA_API_KEY /home/ubuntu/deploy/single-node-install.sh 2>&1 | tail -30\"]" \
   --query 'Command.CommandId' --output text)
 
 while true; do

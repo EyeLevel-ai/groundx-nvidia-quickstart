@@ -1,34 +1,49 @@
-# Self-Hosted GroundX on One GPU Machine
+# GroundX on One GPU Machine, with NVIDIA's Hosted Nemotron
 
-The complete GroundX stack — document processing, search, and all supporting services — on a single machine with one NVIDIA GPU. This is the same software a customer runs behind their own firewall, packed onto one node for demos and evaluation.
+GroundX runs inside your own machine; the language model it calls for document enrichment is NVIDIA's hosted Nemotron. Documents never leave your machine — the model only receives text passages during processing. (Running the language model locally too is a production option covered in the [main deployment repo](https://github.com/eyelevelai/groundx-on-prem), not here.)
 
-## Two ways to run it
+## Required
 
-**Already have a GPU machine?** (Ubuntu 22.04, one 48GB NVIDIA GPU, 8 cores, 64GB RAM, 500GB disk, Docker + NVIDIA Container Toolkit):
+- `export NVIDIA_API_KEY=nvapi-...` — free at [build.nvidia.com](https://build.nvidia.com). **That's the only required input.**
+
+## Optional
+
+- Demo passwords (admin login, database, object storage) — listed in the header of `values-single-node.yaml`. Fine to leave for a demo; change them for anything else.
+
+## Run it
+
+Already have a GPU machine (Ubuntu 22.04, one NVIDIA GPU, 8 cores, 64GB RAM, 500GB disk, Docker + NVIDIA Container Toolkit — an AWS g6e.2xlarge with the Deep Learning Base GPU AMI matches):
 
 ```bash
+export NVIDIA_API_KEY=nvapi-...
 ./single-node-install.sh
 ```
 
-**Starting from nothing, on AWS?** This creates the machine and installs everything on it:
+Starting from nothing on AWS (creates the machine, then installs on it):
 
 ```bash
-SUBNET_ID=subnet-xxxx SECURITY_GROUP_ID=sg-xxxx ./provision-and-install-aws.sh
+export NVIDIA_API_KEY=nvapi-... SUBNET_ID=subnet-... SECURITY_GROUP_ID=sg-...
+./provision-and-install-aws.sh
 ```
 
-Either way: 30–45 minutes, mostly downloads. Everything pulls from public registries — no accounts or credentials needed. Done when every pod in the `eyelevel` namespace shows `Running`.
+30–45 minutes either way, mostly downloads. Done when every pod in the `eyelevel` namespace shows `Running`.
 
-## The files
+## What runs on the machine
 
-| File | What it is |
-|---|---|
-| `single-node-install.sh` | The entire installation in order, commented step by step |
-| `values-single-node.yaml` | The complete configuration: every service pinned to the one node, GPU worker counts capped so three model services share one GPU's memory, and demo credentials matching the bundled databases (**change them for anything beyond a demo**) |
-| `provision-and-install-aws.sh` | Creates the AWS machine, then runs the installer on it remotely |
+| Group | Services | GPU? |
+|---|---|---|
+| Document pipeline | intake, queueing, orchestration, **vision model** (reads page layout: tables, figures, text), OCR, assembly, save | vision model: yes |
+| Search | query handling, **reranker** (scores search results) | reranker: yes |
+| Enrichment routing | one service that sends enrichment calls to NVIDIA's hosted Nemotron | no — the model is NVIDIA-hosted |
+| Storage | MySQL, MinIO (files), OpenSearch (search index), Kafka (queues) | no |
 
-## Measured on this exact setup (July 2026, one NVIDIA L40S)
+Only two models run locally, so the GPU has headroom: tested on a 48GB L40S; this profile should also fit a 24GB GPU (not yet verified).
 
-- Document processing: a 114-page IRS instruction booklet fully processed in about an hour (~110 pages/hour)
+## Where the NVIDIA model is configured
+
+The `engines` block in [`values-single-node.yaml`](values-single-node.yaml) — endpoint URL and model name. Your API key is injected at install time by the script (`--set engines.default.apiKey=...`), so it never sits in a file. To change models later, edit that block and run the same `helm upgrade` command from the install script.
+
+## Measured (July 2026, one 48GB L40S)
+
+- Document processing: a 114-page IRS instruction booklet fully processed in about an hour (~110 pages/hour) — measured on an earlier profile that also ran a local language model; this profile frees that model's ~19GB of GPU memory and doubles the vision-model workers, so expect better (not yet re-measured)
 - Search: ~3 seconds per query
-
-Production deployments put each model service on its own GPU and go much faster — see the [main deployment repo](https://github.com/eyelevelai/groundx-on-prem).
