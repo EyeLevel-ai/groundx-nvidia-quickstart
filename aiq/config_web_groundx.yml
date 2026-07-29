@@ -1,0 +1,30 @@
+# AI-Q Web-mode workflow with GroundX as the knowledge-layer backend.
+# Drop-in variant of configs/config_web_opensearch.yml from NVIDIA-AI-Blueprints/aiq:
+# only the knowledge_search block differs — the "decomposable knowledge layer"
+# working exactly as designed.
+#
+# Install (inside an AI-Q checkout, after copying aiq/groundx_backend/ into
+# sources/knowledge_layer/src/groundx_backend/ and registering it per
+# sources/knowledge_layer/KNOWLEDGE-LAYER-SETUP.md "Building a Custom Backend"):
+#   export GROUNDX_API_KEY=...   # transport-header auth only
+#   export NVIDIA_API_KEY=...
+#
+# Everything below knowledge_search follows the upstream config; sections that
+# are identical to config_web_opensearch.yml are elided here and should be
+# copied from upstream at install time — this file documents the delta.
+
+functions:
+  knowledge_search:
+    _type: knowledge_retrieval
+    backend: groundx
+    collection_name: ${COLLECTION_NAME:-nvidia-quickstart-demo}
+    top_k: 5
+    groundx_api_key: ${GROUNDX_API_KEY}
+    groundx_base_url: ${GROUNDX_BASE_URL:-https://api.groundx.ai/api}
+
+  # data_source_registry entry (merge into the upstream registry list):
+  # - id: knowledge_layer
+  #   name: "Knowledge Base (GroundX)"
+  #   description: "Search complex enterprise documents with page-level citations."
+  #   tools:
+  #     - knowledge_search
