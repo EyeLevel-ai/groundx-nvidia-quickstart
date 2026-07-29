@@ -36,18 +36,23 @@ A self-hosted GroundX deployment can point its document-enrichment model at a ho
 ```yaml
 engines:
   default:
-    engineId: nvidia/llama-3.3-nemotron-super-49b-v1.5
+    engineId: nvidia/llama-3.1-nemotron-nano-vl-8b-v1   # must be vision-capable
     baseUrl: https://integrate.api.nvidia.com/v1
-    apiKey: <NVIDIA_API_KEY — inject via secret management, never commit>
-    service: openai
-    vision: false
+    apiKey: <NVIDIA_API_KEY — inject at install time, never commit>
+    service: openai-base64
+    vision: true
     maxInputTokens: 100000
-    maxOutputTokens: 8192   # generous budget lets the reasoning model answer without /no_think
-    maxRequests: 4
-    requestLimit: 4
+    maxOutputTokens: 8192
+    maxRequests: 8
+    requestLimit: 8
 ```
 
-`helm upgrade` with this overlay switches the summary tier to Nemotron; removing it reverts to the bundled self-hosted LLM. Notes: `engineId` must be a **verified-invocable** NIM model (see Gotcha 2); reasoning models work through the standard OpenAI-shaped engine when `maxOutputTokens` is generous — `/no_think` is an optimization, not a requirement, for this path.
+Two settings matter for extraction quality on a self-hosted machine:
+
+- **`vision: true`** — enrichment sends page images, not just text. Without images, charts and figure-heavy pages extract poorly.
+- **`service: openai-base64`** — images travel inside the request body. Required whenever the machine's image storage isn't reachable from the internet (a hosted model can't fetch internal URLs). Use plain `service: openai` only if your image URLs are externally accessible.
+
+The model in `engineId` must therefore be **vision-capable and verified-invocable** (see Gotcha 2). Text-only models like `llama-3.3-nemotron-super-49b-v1.5` are fine as an *agent's* language model (this repo's agent config) but not for image-based document enrichment.
 
 ## Summary
 

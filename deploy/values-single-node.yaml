@@ -24,17 +24,23 @@ cluster:
   type: minikube
 
 # --- The language model: NVIDIA-hosted Nemotron -------------------------------
-# This block is what points GroundX's document-enrichment calls at NVIDIA's
-# hosted model instead of running a language model locally. The API key is
-# injected by the install script (--set engines.default.apiKey=...).
-# Running the model locally instead is a production option covered in the main
-# deployment repo — not this quickstart.
+# Points GroundX's document-enrichment calls at NVIDIA's hosted model instead
+# of running one locally. The API key is injected by the install script
+# (--set engines.default.apiKey=...).
+#
+# Two settings here are load-bearing for extraction quality:
+#   vision: true              enrichment sends page images, not just text —
+#                             critical for charts, figures, and layout
+#   service: openai-base64    images travel inside the request as base64.
+#                             Required here: this machine's image URLs are
+#                             internal, so a hosted model can't fetch them
+# The model must therefore be vision-capable.
 engines:
   default:
-    engineId: nvidia/llama-3.3-nemotron-super-49b-v1.5
+    engineId: nvidia/llama-3.1-nemotron-nano-vl-8b-v1
     baseUrl: https://integrate.api.nvidia.com/v1
-    service: openai
-    vision: false
+    service: openai-base64
+    vision: true
     maxInputTokens: 100000
     maxOutputTokens: 8192
     maxRequests: 8

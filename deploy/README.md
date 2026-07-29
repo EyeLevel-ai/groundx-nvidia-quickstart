@@ -28,20 +28,24 @@ export NVIDIA_API_KEY=nvapi-... SUBNET_ID=subnet-... SECURITY_GROUP_ID=sg-...
 
 30–45 minutes either way, mostly downloads. Done when every pod in the `eyelevel` namespace shows `Running`.
 
-## What runs on the machine
+## What uses GPUs, and for what
 
-| Group | Services | GPU? |
-|---|---|---|
-| Document pipeline | intake, queueing, orchestration, **vision model** (reads page layout: tables, figures, text), OCR, assembly, save | vision model: yes |
-| Search | query handling, **reranker** (scores search results) | reranker: yes |
-| Enrichment routing | one service that sends enrichment calls to NVIDIA's hosted Nemotron | no — the model is NVIDIA-hosted |
-| Storage | MySQL, MinIO (files), OpenSearch (search index), Kafka (queues) | no |
+**On your GPU (the machine this installs):**
 
-Only two models run locally, so the GPU has headroom: tested on a 48GB L40S; this profile should also fit a 24GB GPU (not yet verified).
+| Model | Job |
+|---|---|
+| Vision model | Reads every page's layout — tables, figures, text regions — during document processing |
+| Reranker | Re-scores results for relevance on every search |
 
-## Where the NVIDIA model is configured
+**On NVIDIA's GPUs (hosted Nemotron, via your API key):** a vision-capable Nemotron receives each page image during processing and writes the descriptions that make tables and figures searchable. Images travel inside the request (base64) because this machine's storage isn't reachable from outside — that's the `service: openai-base64` setting in the values file, and it's why the model must be vision-capable.
 
-The `engines` block in [`values-single-node.yaml`](values-single-node.yaml) — endpoint URL and model name. Your API key is injected at install time by the script (`--set engines.default.apiKey=...`), so it never sits in a file. To change models later, edit that block and run the same `helm upgrade` command from the install script.
+Everything else on the machine is CPU-only plumbing: intake, queues, orchestration, OCR, the API, and storage (MySQL, MinIO, OpenSearch, Kafka).
+
+Two local models leave the GPU headroom: tested on a 48GB L40S; should fit a 24GB GPU (not yet verified).
+
+## Changing the NVIDIA model
+
+Edit the `engines` block in [`values-single-node.yaml`](values-single-node.yaml) (endpoint + model name — keep it vision-capable), then re-run the `helm upgrade` line from the install script. Your API key is injected at install time and never sits in a file.
 
 ## Measured (July 2026, one 48GB L40S)
 
