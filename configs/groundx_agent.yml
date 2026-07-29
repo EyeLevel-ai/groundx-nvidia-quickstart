@@ -1,4 +1,5 @@
-# NeMo Agent Toolkit workflow: ReAct agent over GroundX document intelligence
+# NeMo Agent Toolkit agent configuration: ReAct agent over GroundX document intelligence
+# ("workflow" below is the toolkit's own config keyword — unrelated to GroundX workflows)
 # - Tools: GroundX hosted MCP server (search + ingest), discovered dynamically
 # - Agent LLM: Nemotron on a build.nvidia.com hosted NIM endpoint
 # Keys come from the environment (.env) — never placed in tool arguments.

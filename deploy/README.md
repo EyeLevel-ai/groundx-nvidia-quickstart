@@ -80,7 +80,7 @@ Your API key is the `admin.apiKey` value from `values-single-node.yaml`. Verify 
 curl -H "X-API-Key: <admin.apiKey>" http://localhost:8080/api/v1/health
 ```
 
-Then point the quickstart scripts at it: in `.env`, set `GROUNDX_BASE_URL=http://localhost:8080/api` and `GROUNDX_API_KEY=<admin.apiKey>`.
+Then point the quickstart scripts at it: in `.env`, set `GROUNDX_BASE_URL=http://localhost:8080/api` and `GROUNDX_API_KEY=<admin.apiKey>`. Run the scripts on this machine; to drive them from elsewhere, add `--address 0.0.0.0` to the port-forward and firewall the port accordingly.
 
 ## Measured (July 2026, one 48GB L40S)
 

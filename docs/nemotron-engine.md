@@ -7,7 +7,7 @@ GroundX points its document processing at NVIDIA models through two surfaces, us
 | **Workflows** (`scripts/nvidia_workflow.py`) | Per bucket, at runtime, over the API — works on cloud and self-hosted alike | Change models, prompts, or chunking per project with an API call; no redeploy |
 | **Helm values** (`deploy/values-single-node.yaml`, the `engines` block) | Per deployment, at install/upgrade time — self-hosted only | Set the deployment-wide default model |
 
-Both carry the same engine fields (endpoint URL, model name, key, transport). The rest of this page is endpoint-level findings that apply to either surface.
+Both carry the same engine fields — endpoint URL, model name, key, transport — with one copy-paste hazard: the workflow API spells them `engineID`/`baseURL`, Helm values spell them `engineId`/`baseUrl`. The rest of this page is endpoint-level findings that apply to either surface.
 
 ## Endpoint findings (July 2026, integrate.api.nvidia.com)
 
@@ -35,6 +35,8 @@ Any OpenAI-compatible client that reads `choices[0].message.content` (including 
 3. pin a non-reasoning model.
 
 Token accounting note: reasoning tokens count in `usage` — cost/metering must expect higher totals when reasoning is on.
+
+In this repo: the agent uses mitigation 2 (a generous `max_tokens` in `configs/groundx_agent.yml`); document processing uses `nano-vl-8b`, a non-reasoning model, so no toggle is needed there.
 
 ## Gotcha 2 — the model catalog lists models that are not invocable
 
