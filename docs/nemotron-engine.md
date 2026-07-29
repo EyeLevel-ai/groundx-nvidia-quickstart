@@ -1,4 +1,15 @@
-# Running GroundX + agents on Nemotron NIM endpoints — validated findings
+# Running GroundX on NVIDIA Models — the two configuration surfaces
+
+GroundX points its document processing at NVIDIA models through two surfaces, used in this repo:
+
+| Surface | Scope | When |
+|---|---|---|
+| **Workflows** (`scripts/nvidia_workflow.py`) | Per bucket, at runtime, over the API — works on cloud and self-hosted alike | Change models, prompts, or chunking per project with an API call; no redeploy |
+| **Helm values** (`deploy/values-single-node.yaml`, the `engines` block) | Per deployment, at install/upgrade time — self-hosted only | Set the deployment-wide default model |
+
+Both carry the same engine fields (endpoint URL, model name, key, transport). The rest of this page is endpoint-level findings that apply to either surface.
+
+# Validated findings against Nemotron hosted endpoints
 
 Validated 2026-07-28 against `https://integrate.api.nvidia.com/v1` (OpenAI-compatible hosted NIM endpoints, free-trial API key).
 

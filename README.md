@@ -1,8 +1,14 @@
 # GroundX + NVIDIA Quickstart
 
-An AI agent that answers questions about your documents and cites the exact page — GroundX reads and searches the documents, NVIDIA Nemotron does the reasoning, and NVIDIA's NeMo Agent Toolkit runs the agent.
+An AI agent that answers questions about complex documents and cites the exact page — GroundX reads and searches the documents, NVIDIA Nemotron does the reasoning, and NVIDIA's NeMo Agent Toolkit runs the agent.
 
-NVIDIA models and GPUs are in the path twice: **Nemotron reads every page during document processing** (that's what makes tables and figures searchable), and Nemotron is the agent's reasoning model. Self-hosted GroundX adds a third: its page-reading vision model and search reranker run on **your** NVIDIA GPU.
+**Why GroundX for the document layer:**
+
+- **Accuracy where documents are hard.** A vision model reads every page the way a person does — tables, figures, layout — before any language model touches it. Up to 99% accuracy on documents that break general-purpose pipelines; Air France/KLM measured 96.2% against a 60% target. ([Published head-to-head test](https://www.eyelevel.ai/post/most-accurate-rag), documents and code public.)
+- **Cheaper at scale, by design.** Because pages are broken into typed elements first, small fast models do the enrichment work — no frontier-scale model required for ingestion.
+- **Runs anywhere, configured two ways.** Same product as GroundX cloud or self-hosted on your GPUs (public [Helm chart](https://github.com/eyelevelai/groundx-on-prem), air-gap capable). Deployment is configured with Helm values; *processing* is configured with **workflows** — per-bucket, at runtime, over the API. You'll use both below.
+
+NVIDIA models and GPUs are in the path twice — **Nemotron reads every page during document processing** (that's what makes tables and figures searchable) and powers the agent's reasoning. Self-hosted GroundX adds a third: its page-reading vision model and search reranker run on **your** NVIDIA GPU.
 
 ```mermaid
 flowchart LR
@@ -49,19 +55,27 @@ cp .env.example .env          # put your two keys in .env
 python -m venv .venv && .venv/bin/pip install -r requirements.txt
 ```
 
-**1. Load a document** (the sample is the IRS Form 1040 instructions — 100+ pages of dense tables; processing takes a few minutes):
+**1. Point document processing at NVIDIA models** — one command:
+
+```bash
+.venv/bin/python scripts/nvidia_workflow.py
+```
+
+This is GroundX's **workflow** system doing what it's for: every processing stage — document summaries, keywords, section and chunk summaries, search-query generation — is a configurable step, and any step can run on any OpenAI-compatible model, per bucket, changed at runtime with an API call. This command points all of them at NVIDIA's vision-capable Nemotron. The same mechanism swaps prompts, chunking strategy, and models per project without redeploying anything.
+
+**2. Load a document** (the sample is the IRS Form 1040 instructions — 100+ pages of dense tables; processing takes a few minutes, now running on Nemotron):
 
 ```bash
 .venv/bin/python scripts/ingest.py
 ```
 
-**2. Ask the agent a question:**
+**3. Ask the agent a question:**
 
 ```bash
 scripts/run_agent.sh "What is the standard deduction for married filing jointly? Cite the page."
 ```
 
-**3. Use your own documents:**
+**4. Use your own documents:**
 
 ```bash
 .venv/bin/python scripts/ingest.py https://example.com/your-document.pdf
@@ -71,10 +85,10 @@ Prefer a notebook? [`notebooks/quickstart.ipynb`](notebooks/quickstart.ipynb) wa
 
 ## Scenario B — self-hosted GroundX + NVIDIA models
 
-GroundX runs on your own GPU machine; documents never leave it. NVIDIA's hosted Nemotron handles document enrichment (it receives page images during processing) — and your machine's NVIDIA GPU runs the vision model and search reranker.
+GroundX runs on your own GPU machine; documents never leave it. Your NVIDIA GPU runs the page-reading vision model and the search reranker; NVIDIA's hosted Nemotron handles enrichment, receiving page images during processing.
 
-1. Install on your machine (or let the AWS script create one): **[deploy/](deploy/)** — one required input, ~45 minutes.
-2. Point the same scripts at your instance by setting one line in `.env`:
+1. Install on your machine (or let the AWS script create one): **[deploy/](deploy/)** — one required input, ~45 minutes. Here the NVIDIA model choice lives in Helm values (deployment configuration); workflows work on top of it exactly as in Scenario A.
+2. Point the same scripts at your instance with one line in `.env`:
    ```
    GROUNDX_BASE_URL=http://your-machine:8080/api
    ```
@@ -86,8 +100,8 @@ Note: the agent demo (`run_agent.sh`) uses GroundX's cloud tool endpoint and wor
 
 | Scenario | Your documents | The model |
 |---|---|---|
-| A — cloud | Your GroundX cloud account; delete anytime with `scripts/cleanup.py` | NVIDIA-hosted Nemotron receives text passages at question time, never files |
-| B — self-hosted | Stay on your machine | NVIDIA-hosted Nemotron receives page images during processing and text passages at question time, never files |
+| A — cloud | Your GroundX cloud account; delete anytime with `scripts/cleanup.py` | NVIDIA-hosted Nemotron receives page images during processing and text passages at question time — never files |
+| B — self-hosted | Stay on your machine | Same: page images during processing, text passages at question time — never files |
 
 API keys travel only in connection headers — never in prompts, tool arguments, or logs. Fully local deployments (models included, air-gap capable) are a production option in the [main deployment repo](https://github.com/eyelevelai/groundx-on-prem).
 

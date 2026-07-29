@@ -59,7 +59,10 @@ Tested on a 48GB L40S with room to spare; should fit a 24GB GPU (not yet verifie
 
 ## Changing the NVIDIA model
 
-Edit the `engines` block in [`values-single-node.yaml`](values-single-node.yaml) (endpoint + model name — keep it vision-capable), then re-run the `helm upgrade` line from the install script. Your API key is injected at install time and never sits in a file.
+Two surfaces, by design:
+
+- **Deployment default** — the `engines` block in [`values-single-node.yaml`](values-single-node.yaml) (endpoint + model name; keep it vision-capable). Edit and re-run the `helm upgrade` line from the install script. Your API key is injected at install time and never sits in a file.
+- **Per bucket, at runtime** — GroundX **workflows** override the deployment default for any bucket with an API call, no redeploy: see [`scripts/nvidia_workflow.py`](../scripts/nvidia_workflow.py). Same mechanism swaps prompts and chunking per project.
 
 ## Measured (July 2026, one 48GB L40S)
 
