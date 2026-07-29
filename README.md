@@ -2,14 +2,25 @@
 
 An AI agent that answers questions about your documents and cites the exact page — GroundX reads and searches the documents, NVIDIA Nemotron does the reasoning, and NVIDIA's NeMo Agent Toolkit runs the agent.
 
+NVIDIA models and GPUs are in the path twice: **Nemotron reads every page during document processing** (that's what makes tables and figures searchable), and Nemotron is the agent's reasoning model. Self-hosted GroundX adds a third: its page-reading vision model and search reranker run on **your** NVIDIA GPU.
+
 ```mermaid
 flowchart LR
-    A["Agent<br/>(NVIDIA NeMo Agent Toolkit)"]
-    N["Nemotron<br/>(NVIDIA GPUs, hosted)"]
-    G["GroundX<br/>(cloud — or self-hosted<br/>on your NVIDIA GPU)"]
-    U["You"] -->|question| A
-    A <-->|reasoning| N
-    A <-->|document search, page-cited results| G
+    subgraph GX["GroundX &nbsp;·&nbsp; cloud, or self-hosted on your NVIDIA GPU"]
+        direction TB
+        ING["Document processing"]
+        IDX[("Search index")]
+        ING --> IDX
+    end
+    subgraph NV["NVIDIA GPUs, hosted"]
+        NEMO["Nemotron<br/>vision + language models"]
+    end
+    DOCS["Your documents"] --> ING
+    ING -- "page images" --> NEMO
+    NEMO -- "descriptions of<br/>tables & figures" --> ING
+    AGENT["Agent<br/>NeMo Agent Toolkit"] -- "reasoning" --> NEMO
+    AGENT -- "search" --> IDX
+    IDX -- "page-cited answers" --> AGENT
 ```
 
 ## Contents
