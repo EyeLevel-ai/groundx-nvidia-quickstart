@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Smoke test for the GroundX AI-Q knowledge backend (demo-kit task 5.3).
+"""Smoke test for the GroundX AI-Q knowledge backend.
 
 Checks, without requiring an AI-Q checkout:
   1. adapter.py compiles (syntax-valid against the documented contract)
@@ -8,7 +8,7 @@ Checks, without requiring an AI-Q checkout:
      with the fields the adapter maps (score, fileName, boundingBoxes.pageNumber)
 
 Full in-workflow validation (adapter imported by aiq_agent) requires an AI-Q
-checkout and is tracked as STRETCH in the demo-kit plan.
+checkout.
 """
 
 import json

@@ -6,9 +6,11 @@
 #
 # ── SUGGESTED TO CHANGE (fine to skip for a demo): ───────────────────────────
 #    admin.email / admin.password        your admin login
-#    db.* and file.* passwords           must then also be changed in the
-#                                        backing-service settings the installer
-#                                        uses (see single-node-install.sh)
+#    db.* and file.* passwords           must match the backing services; the
+#                                        installer sets those from the deployment
+#                                        repo's example files (helm/values/percona/
+#                                        values.cluster.yaml and helm/values/minio/
+#                                        values.tenant.yaml in eyelevelai/groundx-on-prem)
 # ──────────────────────────────────────────────────────────────────────────────
 
 licenseKey: "00000000-0000-0000-0000-000000000000"

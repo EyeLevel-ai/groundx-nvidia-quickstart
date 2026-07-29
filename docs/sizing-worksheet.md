@@ -26,8 +26,6 @@ Basis: page processing parallelizes across pages, so throughput scales roughly w
 | One 24GB GPU (e.g., NVIDIA L4) | near the measured row | The two local models need well under 24GB at these worker counts |
 | Three dedicated GPUs (production node groups) | ~3–4× the measured row | No GPU sharing at all |
 
-The first projection gets replaced with a measured number before this worksheet is used in any customer sizing.
+## Capacity is ongoing, not a one-time batch
 
-## Why this matters commercially
-
-Documents keep arriving — claims daily, filings quarterly — so processing capacity is recurring GPU utilization, not a one-time batch. Volume growth converts to GPU count through this table.
+Documents keep arriving — claims daily, filings quarterly — so processing capacity is a standing need. Volume growth converts to GPU count through this table.

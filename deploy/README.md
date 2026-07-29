@@ -13,7 +13,8 @@ flowchart LR
     N["Nemotron vision model<br/>(NVIDIA GPUs, hosted)"]
     D["Your documents"] --> API --> V
     V -->|"page images (base64)"| N
-    N -->|"searchable descriptions"| S
+    N -->|"table & figure descriptions"| V
+    V --> S
     Q["Search query"] --> API
     API <--> R <--> S
     API -->|"page-cited results"| Q
@@ -25,7 +26,8 @@ flowchart LR
 
 ## Required
 
-- `export NVIDIA_API_KEY=nvapi-...` — free at [build.nvidia.com](https://build.nvidia.com). **That's the only required input.**
+- Either path: `export NVIDIA_API_KEY=nvapi-...` — free at [build.nvidia.com](https://build.nvidia.com)
+- AWS script only, additionally: `SUBNET_ID`, `SECURITY_GROUP_ID`, a logged-in AWS CLI, and an instance profile with Systems Manager access (its header lists them too)
 
 ## Optional
 
@@ -49,7 +51,7 @@ export NVIDIA_API_KEY=nvapi-... SUBNET_ID=subnet-... SECURITY_GROUP_ID=sg-...
 
 30–45 minutes either way, mostly downloads. Done when every pod in the `eyelevel` namespace shows `Running`.
 
-## GPU use, in one breath
+## What runs on which GPU
 
 Your GPU runs two models: the **vision model** that reads each page's layout during processing, and the **reranker** that scores results on every search. NVIDIA's hosted GPUs run **Nemotron**, which looks at each page image and writes the descriptions that make tables and figures searchable. Everything else on the machine is CPU plumbing and storage.
 
@@ -63,6 +65,22 @@ Two surfaces, by design:
 
 - **Deployment default** — the `engines` block in [`values-single-node.yaml`](values-single-node.yaml) (endpoint + model name; keep it vision-capable). Edit and re-run the `helm upgrade` line from the install script. Your API key is injected at install time and never sits in a file.
 - **Per bucket, at runtime** — GroundX **workflows** override the deployment default for any bucket with an API call, no redeploy: see [`scripts/nvidia_workflow.py`](../scripts/nvidia_workflow.py). Same mechanism swaps prompts and chunking per project.
+
+## Use it
+
+The API runs inside the cluster; expose it on the machine, then talk to it like any GroundX instance:
+
+```bash
+kubectl -n eyelevel port-forward svc/groundx 8080:80 &
+```
+
+Your API key is the `admin.apiKey` value from `values-single-node.yaml`. Verify with a health check:
+
+```bash
+curl -H "X-API-Key: <admin.apiKey>" http://localhost:8080/api/v1/health
+```
+
+Then point the quickstart scripts at it: in `.env`, set `GROUNDX_BASE_URL=http://localhost:8080/api` and `GROUNDX_API_KEY=<admin.apiKey>`.
 
 ## Measured (July 2026, one 48GB L40S)
 

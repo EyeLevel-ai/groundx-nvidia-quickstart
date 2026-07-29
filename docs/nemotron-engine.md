@@ -9,7 +9,7 @@ GroundX points its document processing at NVIDIA models through two surfaces, us
 
 Both carry the same engine fields (endpoint URL, model name, key, transport). The rest of this page is endpoint-level findings that apply to either surface.
 
-# Validated findings against Nemotron hosted endpoints
+## Endpoint findings (July 2026, integrate.api.nvidia.com)
 
 Validated 2026-07-28 against `https://integrate.api.nvidia.com/v1` (OpenAI-compatible hosted NIM endpoints, free-trial API key).
 
@@ -38,7 +38,7 @@ Token accounting note: reasoning tokens count in `usage` — cost/metering must 
 
 ## Gotcha 2 — the model catalog lists models that are not invocable
 
-`GET /v1/models` returned 102 models including `nvidia/llama-3.1-nemotron-70b-instruct`, but invoking that model returns `404 {"title":"Not Found","detail":"Function ... Not found"}`. **Pin models by verified invocation, not by catalog listing**, and re-verify pinned models before demos.
+`GET /v1/models` returned 102 models including `nvidia/llama-3.1-nemotron-70b-instruct`, but invoking that model returns `404 {"title":"Not Found","detail":"Function ... Not found"}`. **Pin models by verified invocation, not by catalog listing**, and re-verify pinned models before relying on them.
 
 ## Running a self-hosted deployment's language model on Nemotron
 

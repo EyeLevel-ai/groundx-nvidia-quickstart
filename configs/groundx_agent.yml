@@ -20,6 +20,8 @@ llms:
     base_url: https://integrate.api.nvidia.com/v1
     api_key: "${NVIDIA_API_KEY}"
     temperature: 0.2
+    # Generous budget: this reasoning model thinks before answering; too small
+    # a budget returns empty content (see docs/nemotron-engine.md, Gotcha 1)
     max_tokens: 4096
 
 workflow:

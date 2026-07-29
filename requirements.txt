@@ -1,1 +1,5 @@
 nvidia-nat[langchain,mcp]>=1.8.0
+groundx>=2.7.0
+python-dotenv>=1.0
+requests>=2.31
+pyyaml>=6.0

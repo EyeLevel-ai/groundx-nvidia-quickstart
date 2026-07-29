@@ -1,18 +1,18 @@
 # GroundX Self-Hosted — IT Reviewer Fact Sheet
 
-*One page for security and infrastructure reviewers. Written for a questionnaire, not a pitch. Current as of 2026-07-29.*
+*One page for security and infrastructure reviewers. Current as of July 2026.*
 
 ## What runs where
 
 | Configuration | Document content | Model inference | External runtime dependencies |
 |---|---|---|---|
-| **Self-hosted + NVIDIA-hosted model (this quickstart's [deploy](../deploy/) setup)** | Entirely inside your cluster (object store, search index, database all in-cluster) | Vision model and reranker run in-cluster on your GPU; document-enrichment calls go to NVIDIA's hosted Nemotron with text passages only | The NVIDIA model endpoint |
+| **Self-hosted + NVIDIA-hosted model (this quickstart's [deploy](../deploy/) setup)** | Entirely inside your cluster (object store, search index, database all in-cluster) | Vision model and reranker run in-cluster on your GPU; document-enrichment calls go to NVIDIA's hosted Nemotron carrying page images (base64) and text passages | The NVIDIA model endpoint |
 | Fully self-hosted (production option, [main deployment repo](https://github.com/eyelevelai/groundx-on-prem)) | Entirely inside your cluster | All models in-cluster, including the language model | **None at runtime** — suitable for air-gapped operation |
 | GroundX hosted service | GroundX cloud (api.groundx.ai) | GroundX cloud | n/a |
 
 ## What leaves the firewall, per configuration
 
-- **Self-hosted + NVIDIA-hosted model (this quickstart):** text passages sent to the NVIDIA model endpoint during document processing; no raw files leave. Install-time: container images and model weights pull from public registries.
+- **Self-hosted + NVIDIA-hosted model (this quickstart):** page images (base64) and text passages sent to the NVIDIA model endpoint during document processing; raw files never leave. Install-time: container images and model weights pull from public registries.
 - **Fully self-hosted (production option):** nothing at runtime; installs can be pre-staged for air-gapped environments.
 - **Agent integrations:** the agent's model (wherever it runs) receives retrieved text passages at question time — never raw files, never credentials. API keys travel only in connection headers.
 
@@ -28,7 +28,6 @@
 - All application pods are stateless; state lives in the backing stores. No inbound connectivity required beyond your API ingress.
 - GPU: NVIDIA. Demo/sizing reference: the vision model and reranker share a single L40S (48GB); production deployments use the documented node groups.
 
-## Honest notes for this demo environment
+## Notes
 
-- The demonstration machine is an AWS instance operated by GroundX, and its language model is NVIDIA-hosted. Fully air-gapped operation is a production configuration, not what this demo runs.
-- Demo credentials in this kit are placeholder values; production installs use your own secrets management.
+- The single-node profile in [`deploy/`](../deploy/) uses placeholder credentials and an NVIDIA-hosted language model. Fully air-gapped operation — every model local — is a production configuration in the [main deployment repo](https://github.com/eyelevelai/groundx-on-prem).

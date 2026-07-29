@@ -4,7 +4,7 @@ An AI agent that answers questions about complex documents and cites the exact p
 
 **Why GroundX for the document layer:**
 
-- **Accuracy where documents are hard.** A vision model reads every page the way a person does — tables, figures, layout — before any language model touches it. Up to 99% accuracy on documents that break general-purpose pipelines; Air France/KLM measured 96.2% against a 60% target. ([Published head-to-head test](https://www.eyelevel.ai/post/most-accurate-rag), documents and code public.)
+- **Accuracy where documents are hard.** A vision model reads every page the way a person does — tables, figures, layout — before any language model touches it. Up to 99% accuracy on documents that break general-purpose pipelines; Air France/KLM measured 96.2% against a 60% target. Separately, EyeLevel's [published head-to-head test](https://www.eyelevel.ai/post/most-accurate-rag) is public — documents, questions, and code.
 - **Cheaper at scale, by design.** Because pages are broken into typed elements first, small fast models do the enrichment work — no frontier-scale model required for ingestion.
 - **Runs anywhere, configured two ways.** Same product as GroundX cloud or self-hosted on your GPUs (public [Helm chart](https://github.com/eyelevelai/groundx-on-prem), air-gap capable). Deployment is configured with Helm values; *processing* is configured with **workflows** — per-bucket, at runtime, over the API. You'll use both below.
 
@@ -96,6 +96,13 @@ GroundX runs on your own GPU machine; documents never leave it. Your NVIDIA GPU 
 
 Note: the agent demo (`run_agent.sh`) uses GroundX's cloud tool endpoint and works with Scenario A; document loading and search in Scenario B are driven through the scripts and notebook.
 
+## Go deeper
+
+- [Security fact sheet](docs/it-reviewer-fact-sheet.md) — what runs where and what leaves the firewall, per configuration
+- [GPU sizing](docs/sizing-worksheet.md) — measured throughput and how document volume converts to GPU count
+- [Running GroundX on NVIDIA models](docs/nemotron-engine.md) — the two configuration surfaces and endpoint findings
+- [AI-Q knowledge backend](aiq/) — GroundX as a retrieval backend for NVIDIA's AI-Q research agent, written to its documented plug-in contract
+
 ## Where your data goes
 
 | Scenario | Your documents | The model |
@@ -109,7 +116,7 @@ API keys travel only in connection headers — never in prompts, tool arguments,
 
 | Symptom | Fix |
 |---|---|
-| `mcp_client not found` when validating the config | `pip install "nvidia-nat[mcp]"` (already in requirements.txt) |
+| `mcp_client not found` when validating the config | Install from `requirements.txt` — it includes the MCP plugin |
 | `401 Unauthorized` connecting to GroundX | The header block in `configs/groundx_agent.yml` must be `custom_headers`, and `GROUNDX_API_KEY` must be set in `.env` |
 | Model error about context length after a search | Keep the `additional_instructions` block in the config — it tells the agent to request small search responses |
 | `Session termination failed: 401` warning at exit | Harmless; appears after the tools have already succeeded |
