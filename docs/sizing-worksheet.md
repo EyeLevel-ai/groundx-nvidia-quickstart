@@ -1,6 +1,6 @@
 # GPU Sizing Worksheet
 
-Converts document volume into GPU capacity. One row is measured; every projection states its basis and is marked **not yet measured**.
+Converts document volume into GPU capacity — standing volume, not a one-time batch, since documents keep arriving. One row is measured; every projection states its basis and is marked **not yet measured**.
 
 ## Measured row (July 2026)
 
@@ -25,7 +25,3 @@ Basis: page processing parallelizes across pages, so throughput scales roughly w
 | Current quickstart profile (NVIDIA-hosted language model, 4 vision workers) | ~1.5–2× the measured row | Language model off the GPU; double the vision workers |
 | One 24GB GPU (e.g., NVIDIA L4) | near the measured row | The two local models need well under 24GB at these worker counts |
 | Three dedicated GPUs (production node groups) | ~3–4× the measured row | No GPU sharing at all |
-
-## Capacity is ongoing, not a one-time batch
-
-Documents keep arriving — claims daily, filings quarterly — so processing capacity is a standing need. Volume growth converts to GPU count through this table.

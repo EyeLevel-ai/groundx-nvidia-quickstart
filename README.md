@@ -5,9 +5,9 @@ Build an AI agent that answers questions about complex documents and cites the e
 - [What you need](#what-you-need)
 - [Scenario A — GroundX cloud](#scenario-a--groundx-cloud) *(~10 minutes)*
 - [Scenario B — self-hosted GroundX + NVIDIA models](#scenario-b--self-hosted-groundx--nvidia-models) *(your GPU machine: ~45 minutes)*
-- [Drive it from your coding agent](#drive-it-from-your-coding-agent)
 - [How it works](#how-it-works)
 - [Where your data goes](#where-your-data-goes)
+- [Drive it from your coding agent](#drive-it-from-your-coding-agent)
 - [Go deeper](#go-deeper) · [Troubleshooting](#troubleshooting)
 
 ## What you need
@@ -34,7 +34,7 @@ python -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python scripts/nvidia_workflow.py
 ```
 
-This uses GroundX **workflows**: every processing stage — document summaries, keywords, section and chunk summaries, the chunk instructions that turn tables and figures into searchable text, search-query generation — is a configurable step, and any step can run on any OpenAI-compatible model, per bucket (a named collection of documents), changed at runtime with an API call. This command points all of them at NVIDIA's vision-capable Nemotron. The same mechanism swaps prompts, chunking strategy, and models per project without redeploying anything.
+GroundX **workflows** make every processing stage — summaries, keywords, the chunk instructions that turn tables and figures into searchable text, search-query generation — a configurable step that can run on any OpenAI-compatible model, per bucket, changed at runtime with an API call. This command points all of them at NVIDIA's vision-capable Nemotron; the rest of the mechanism (and two endpoint gotchas worth knowing) is in [docs/nemotron-engine.md](docs/nemotron-engine.md).
 
 **2. Load a document** (the sample is the IRS Form 1040 instructions — 100+ pages of dense tables; processing takes a few minutes, running on Nemotron):
 
@@ -54,11 +54,11 @@ scripts/run_agent.sh "What is the standard deduction for married filing jointly?
 .venv/bin/python scripts/ingest.py https://example.com/your-document.pdf
 ```
 
-Prefer a notebook? [`notebooks/quickstart.ipynb`](notebooks/quickstart.ipynb) walks the same steps plus a raw-REST example.
+Prefer a notebook? [`notebooks/quickstart.ipynb`](notebooks/quickstart.ipynb) walks the same steps, plus a raw-REST example and a look inside the per-document X-Ray JSON.
 
 ## Scenario B — self-hosted GroundX + NVIDIA models
 
-GroundX runs on your own GPU machine; documents never leave it. Your NVIDIA GPU runs GroundX's page-reading vision model and search reranker; NVIDIA's hosted Nemotron handles enrichment.
+GroundX runs on your own GPU machine; documents never leave it. Your NVIDIA GPU runs GroundX's page-reading vision model and search reranker; NVIDIA's hosted Nemotron handles enrichment. **Scope:** Scenario B covers loading and search (scripts and notebook); the agent demo (`run_agent.sh`) connects to GroundX's hosted MCP tool server, which this single-node build doesn't include — an MCP service for self-hosted deployments lives on the [main deployment repo](https://github.com/eyelevelai/groundx-on-prem)'s roadmap.
 
 1. Install on your machine, or let the AWS script create one: **[deploy/](deploy/)** — one required input, ~45 minutes. The NVIDIA model choice lives in Helm values here (deployment configuration); workflows work on top of it exactly as in Scenario A.
 2. Run the quickstart scripts **on that machine**, pointing them at the local API with one line in `.env` (the deploy guide's "Use it" section shows the port-forward that makes this address work):
@@ -67,33 +67,9 @@ GroundX runs on your own GPU machine; documents never leave it. Your NVIDIA GPU 
    ```
 3. Load documents and search exactly as in Scenario A.
 
-Note: the agent demo (`run_agent.sh`) connects to GroundX's hosted MCP tool server, which the single-node build doesn't include — so the agent step is for Scenario A; Scenario B drives loading and search through the scripts and notebook.
-
-## Drive it from your coding agent
-
-Everything above can also be done conversationally. The [GroundX Agent Harness](https://github.com/GroundX-Studio/groundx-agent-harness) is a free skills bundle that makes Claude Code, Codex, and similar assistants fluent in GroundX:
-
-```bash
-claude plugin marketplace add GroundX-Studio/groundx-agent-harness
-claude plugin install groundx-agent-harness@groundx-agent-harness
-```
-
-(Those commands are for Claude Code; the [harness repo](https://github.com/GroundX-Studio/groundx-agent-harness) has steps for Codex and other clients.) What's in the bundle:
-
-| Skill area | What your agent learns |
-|---|---|
-| Ingest & search | Load documents, check processing status, search with citations, debug stuck documents and empty results |
-| Workflows & organization | Create and assign workflows (like this quickstart's), manage buckets and groups |
-| Structured extraction | Build schema-first extraction workflows for pulling fields from documents |
-| Self-hosted planning | Size and plan Helm-chart deployments |
-
-Then ask in your own words: *"Create a workflow like nvidia-nemotron but add a custom chunk prompt for financial tables"* — *"Why is my document stuck in processing?"* — *"Plan a self-hosted GroundX install for a 3-node cluster."*
-
-Set `GROUNDX_API_KEY` in the shell that starts your agent. With that key the agent can create and delete documents and buckets in your account — treat it like any credential, and use a separate account if you want a sandbox.
-
 ## How it works
 
-**Ingestion.** GroundX's own vision model maps every page into typed elements — tables, figures, text blocks. Then, for each element, section, and document, workflow steps call Nemotron with the step's prompt, the extracted text, and the page and element images. What comes back is much more than captions: document and section summaries, keywords at every level, plain-language narratives and structured data for each table and figure, retrieval-optimized search queries, and multiple renderings of every chunk (original text, an LLM-tuned version, a search-tuned version). All of it lands in the search index — and in a per-document JSON (the "X-Ray") you can download and inspect.
+**Ingestion.** GroundX's own vision model maps every page into typed elements — tables, figures, text blocks. Then, for each element, section, and document, workflow steps call Nemotron with the step's prompt, the extracted text, and the page and element images. What comes back is much more than captions: document and section summaries, keywords at every level, plain-language narratives and structured data for each table and figure, retrieval-optimized search queries, and multiple renderings of every chunk (original text, an LLM-tuned version, a search-tuned version). All of it lands in the search index — and in a per-document JSON (the "X-Ray") you can download and inspect; section 6 of [the notebook](notebooks/quickstart.ipynb) fetches and prints one.
 
 ```mermaid
 flowchart LR
@@ -112,7 +88,7 @@ flowchart LR
     S -- "ranked passages: text, score,<br/>page + exact location" --> A --> R["Cited answer"]
 ```
 
-**Why this design.** The vision model reads layout the way a person does, which is why accuracy holds on documents that break text-only pipelines — up to 99% on hard documents; Air France/KLM measured 96.2% against a 60% target; EyeLevel's [head-to-head test](https://www.eyelevel.ai/post/most-accurate-rag) is public. Because pages become small typed elements first, compact fast models handle the enrichment — no frontier-scale model needed at ingest. And the same product runs as cloud or self-hosted ([public Helm chart](https://github.com/eyelevelai/groundx-on-prem), air-gap capable), configured by Helm values at deployment and by workflows at runtime.
+**Why this design.** The vision model reads layout the way a person does, which is why accuracy holds on documents that break text-only pipelines. In production at Air France/KLM, that meant a customer-measured 96.2% accuracy against a 60% target; EyeLevel's [head-to-head test](https://www.eyelevel.ai/post/most-accurate-rag) is public, and a preregistered head-to-head against NVIDIA's own RAG blueprint — rules and [win criteria](https://github.com/EyeLevel-ai/groundx-doc-eval-harness/blob/main/preregistration/decision-rule.md) locked before any system runs — is underway in the [eval harness repo](https://github.com/EyeLevel-ai/groundx-doc-eval-harness). Because pages become small typed elements first, compact fast models handle the enrichment — no frontier-scale model needed at ingest. And the same product runs as cloud or self-hosted ([public Helm chart](https://github.com/eyelevelai/groundx-on-prem), air-gap capable), configured by Helm values at deployment and by workflows at runtime.
 
 ## Where your data goes
 
@@ -126,11 +102,23 @@ flowchart LR
 
 Raw document files never go to NVIDIA in either scenario. API keys travel only in connection headers — never in prompts, tool arguments, or logs. Fully local deployments (every model included, air-gap capable) are a production option in the [main deployment repo](https://github.com/eyelevelai/groundx-on-prem).
 
+## Drive it from your coding agent
+
+Everything above can also be done conversationally. The [GroundX Agent Harness](https://github.com/GroundX-Studio/groundx-agent-harness) is a free skills bundle that makes Claude Code, Codex, and similar assistants fluent in GroundX — ingest and search, workflows, structured extraction, and self-hosted deployment planning:
+
+```bash
+claude plugin marketplace add GroundX-Studio/groundx-agent-harness
+claude plugin install groundx-agent-harness@groundx-agent-harness
+```
+
+Then ask in your own words — *"Why is my document stuck in processing?"*, *"Create a workflow like nvidia-nemotron with a custom chunk prompt for financial tables."* The [harness repo](https://github.com/GroundX-Studio/groundx-agent-harness) lists the full skill set and setup for other clients. Set `GROUNDX_API_KEY` in the shell that starts your agent, and treat it like any credential — the agent can create and delete documents and buckets with it.
+
 ## Go deeper
 
 - [Security fact sheet](docs/it-reviewer-fact-sheet.md) — what runs where and what leaves the firewall, per configuration
 - [GPU sizing](docs/sizing-worksheet.md) — measured throughput and how document volume converts to GPU count
 - [Running GroundX on NVIDIA models](docs/nemotron-engine.md) — the two configuration surfaces and endpoint findings
+- [Preregistered eval vs NVIDIA's RAG blueprint](https://github.com/EyeLevel-ai/groundx-doc-eval-harness) — a four-system head-to-head with the rules checksummed before any system runs
 - [AI-Q knowledge backend](aiq/) — GroundX as a retrieval backend for NVIDIA's AI-Q research agent, written to its documented plug-in contract
 
 ## Troubleshooting

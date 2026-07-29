@@ -1,6 +1,6 @@
 # GroundX on One GPU Machine, with NVIDIA's Hosted Nemotron
 
-GroundX runs inside your own machine; NVIDIA's hosted Nemotron handles document enrichment. Documents never leave your machine — only page images and text passages go to the model. (Running every model locally is a production option in the [main deployment repo](https://github.com/eyelevelai/groundx-on-prem), not here.)
+GroundX runs inside your own machine; NVIDIA's hosted Nemotron handles document enrichment. Documents never leave your machine — only page images and text passages go to the model. (Running every model locally is a production option in the [main deployment repo](https://github.com/eyelevelai/groundx-on-prem), not here.) This build covers ingest and search; the quickstart's agent demo needs GroundX's hosted MCP tool server, which the single-node build doesn't include.
 
 ```mermaid
 flowchart LR
