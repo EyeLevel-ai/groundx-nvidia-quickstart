@@ -29,6 +29,26 @@ Token accounting note: reasoning tokens count in `usage` — cost/metering must 
 
 `GET /v1/models` returned 102 models including `nvidia/llama-3.1-nemotron-70b-instruct`, but invoking that model returns `404 {"title":"Not Found","detail":"Function ... Not found"}`. **Pin models by verified invocation, not by catalog listing**, and re-verify pinned models before demos.
 
+## Verified: the Helm-values swap (no code changes)
+
+Demonstrated live 2026-07-29 on a self-hosted deployment — a full agentic ingest completed with the enrichment LLM on the hosted Nemotron endpoint, flipped purely via chart values:
+
+```yaml
+engines:
+  default:
+    engineId: nvidia/llama-3.3-nemotron-super-49b-v1.5
+    baseUrl: https://integrate.api.nvidia.com/v1
+    apiKey: <NVIDIA_API_KEY — inject via secret management, never commit>
+    service: openai
+    vision: false
+    maxInputTokens: 100000
+    maxOutputTokens: 8192   # generous budget lets the reasoning model answer without /no_think
+    maxRequests: 4
+    requestLimit: 4
+```
+
+`helm upgrade` with this overlay switches the summary tier to Nemotron; removing it reverts to the bundled self-hosted LLM. Notes: `engineId` must be a **verified-invocable** NIM model (see Gotcha 2); reasoning models work through the standard OpenAI-shaped engine when `maxOutputTokens` is generous — `/no_think` is an optimization, not a requirement, for this path.
+
 ## Implication for GroundX's summary engine
 
 GroundX's LLM tier is engine-agnostic (OpenAI-compatible engines with a configurable base URL), so pointing it at a Nemotron NIM is configuration — but the `/no_think` system-message requirement means the engine config for reasoning-family Nemotron models must inject that system message (or a non-reasoning Nemotron model must be pinned). This is the summary-engine validation finding; see the demo-kit change log for the follow-up decision.
