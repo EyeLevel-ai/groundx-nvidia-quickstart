@@ -1,7 +1,26 @@
-# Settings that make the full GroundX stack fit on one machine with one GPU.
-# Demo credentials below match the bundled databases installed by
-# single-node-install.sh — CHANGE THEM for anything beyond a demo.
+# Complete settings for running the full GroundX stack on one machine with one
+# NVIDIA GPU (48GB). This is the only values file the install uses.
+#
+# The credentials below are DEMO credentials matching the bundled databases
+# that single-node-install.sh sets up. Change all of them for anything beyond
+# a demo. The license and admin values are placeholders accepted by current
+# chart versions.
 
+licenseKey: "00000000-0000-0000-0000-000000000000"
+
+admin:
+  apiKey: "00000000-0000-0000-0000-000000000000"
+  email: "admin@example.com"
+  password: "password"
+  username: "00000000-0000-0000-0000-000000000000"
+
+cluster:
+  pvClass: eyelevel-pv
+  type: minikube
+
+# --- Everything runs on the one node -----------------------------------------
+# The chart normally spreads services across labeled machine groups; here every
+# service is pinned to the single node's label.
 cache: {node: eyelevel-cpu-only, metrics: {node: eyelevel-cpu-only}}
 groundx: {node: eyelevel-cpu-only}
 layout:
@@ -9,6 +28,8 @@ layout:
   correct: {node: eyelevel-cpu-only}
   inference:
     node: eyelevel-cpu-only
+    # workers capped so the vision model's GPU memory use stays ~2GB;
+    # the GPU is shared with the language model and the reranker.
     workers: 2
     resources:
       limits: {memory: 12Gi, nvidia.com/gpu: 1}
@@ -34,9 +55,14 @@ summary:
   api: {node: eyelevel-cpu-only}
   inference:
     node: eyelevel-cpu-only
+    # one replica of the language model (~19GB GPU memory)
     replicas: {desired: 1, min: 1, max: 1}
 summaryClient: {node: eyelevel-cpu-only}
 upload: {node: eyelevel-cpu-only}
+
+# --- Credentials for the bundled databases ------------------------------------
+# These must match what the backing services were installed with; the values
+# here match the public example settings used by single-node-install.sh.
 db:
   username: root
   password: password

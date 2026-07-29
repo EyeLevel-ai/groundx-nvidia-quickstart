@@ -21,6 +21,16 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 VALUES="$HERE/values-single-node.yaml"
 
+# --- 0. Tools (installed if missing; needs sudo) -----------------------------
+command -v kubectl >/dev/null || {
+  curl -sLo /tmp/kubectl https://dl.k8s.io/release/v1.31.0/bin/linux/amd64/kubectl
+  sudo install /tmp/kubectl /usr/local/bin/kubectl; }
+command -v minikube >/dev/null || {
+  curl -sLo /tmp/minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+  sudo install /tmp/minikube /usr/local/bin/minikube; }
+command -v helm >/dev/null || {
+  curl -s https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash >/dev/null; }
+
 # --- 1. Single-node Kubernetes with GPU ------------------------------------
 # Kubernetes is pinned to 1.31: newer versions break the Kafka operator
 # version this chart needs.
@@ -91,10 +101,7 @@ sleep 25
 echo "GPU slots available: $(kubectl get node minikube -o jsonpath='{.status.allocatable.nvidia\.com/gpu}')"
 
 # --- 4. GroundX itself --------------------------------------------------------
-curl -sfLo /tmp/groundx-base-values.yaml \
-  https://raw.githubusercontent.com/eyelevelai/groundx-on-prem/main/src/groundx/values/minikube/values.yaml
-helm install groundx groundx/groundx -n eyelevel \
-  -f /tmp/groundx-base-values.yaml -f "$VALUES"
+helm install groundx groundx/groundx -n eyelevel -f "$VALUES"
 
 # On a fully-packed single node, the default rolling-update strategy deadlocks
 # any future config change; terminate-then-start avoids that.
