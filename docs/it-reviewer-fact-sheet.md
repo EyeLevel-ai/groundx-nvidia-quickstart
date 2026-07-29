@@ -6,13 +6,13 @@
 
 | Configuration | Document content | Model inference | External runtime dependencies |
 |---|---|---|---|
-| **Self-hosted + NVIDIA-hosted model (this quickstart's [deploy](../deploy/) setup)** | Entirely inside your cluster (object store, search index, database all in-cluster) | Vision model and reranker run in-cluster on your GPU; document-enrichment calls go to NVIDIA's hosted Nemotron carrying page images (base64) and text passages | The NVIDIA model endpoint |
+| **Self-hosted + NVIDIA-hosted model (this quickstart's [deploy](../deploy/) setup)** | Entirely inside your cluster (object store, search index, database all in-cluster) | Vision model and reranker run in-cluster on your GPU; document-enrichment calls go to NVIDIA's hosted Nemotron carrying the workflow prompts, extracted text, and page/element images (base64) | The NVIDIA model endpoint |
 | Fully self-hosted (production option, [main deployment repo](https://github.com/eyelevelai/groundx-on-prem)) | Entirely inside your cluster | All models in-cluster, including the language model | **None at runtime** — suitable for air-gapped operation |
 | GroundX hosted service | GroundX cloud (api.groundx.ai) | GroundX cloud | n/a |
 
 ## What leaves the firewall, per configuration
 
-- **Self-hosted + NVIDIA-hosted model (this quickstart):** page images (base64) and text passages sent to the NVIDIA model endpoint during document processing; raw files never leave. Install-time: container images and model weights pull from public registries.
+- **Self-hosted + NVIDIA-hosted model (this quickstart):** workflow prompts, extracted text, and page/element images (base64) sent to the NVIDIA model endpoint during document processing; raw files never leave. Install-time: container images and model weights pull from public registries.
 - **Fully self-hosted (production option):** nothing at runtime; installs can be pre-staged for air-gapped environments.
 - **Agent integrations:** the agent's model (wherever it runs) receives retrieved text passages at question time — never raw files, never credentials. API keys travel only in connection headers.
 

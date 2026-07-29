@@ -10,10 +10,10 @@ flowchart LR
         R["Reranker (your GPU)<br/>scores search results"]
         S[("Storage +<br/>search index")]
     end
-    N["Nemotron vision model<br/>(NVIDIA GPUs, hosted)"]
+    N["Nemotron nano-vl<br/>(NVIDIA GPUs, hosted)"]
     D["Your documents"] --> API --> V
-    V -->|"page images (base64)"| N
-    N -->|"table & figure descriptions"| V
+    V -->|"prompts + text +<br/>page & element images (base64)"| N
+    N -->|"summaries, keywords,<br/>table & figure narratives"| V
     V --> S
     Q["Search query"] --> API
     API <--> R <--> S
@@ -53,7 +53,7 @@ export NVIDIA_API_KEY=nvapi-... SUBNET_ID=subnet-... SECURITY_GROUP_ID=sg-...
 
 ## What runs on which GPU
 
-Your GPU runs two models: the **vision model** that reads each page's layout during processing, and the **reranker** that scores results on every search. NVIDIA's hosted GPUs run **Nemotron**, which looks at each page image and writes the descriptions that make tables and figures searchable. Everything else on the machine is CPU plumbing and storage.
+Your GPU runs two models: the **vision model** that reads each page's layout during processing, and the **reranker** that scores results on every search. NVIDIA's hosted GPUs run **Nemotron**, which receives each processing step's prompt, extracted text, and page/element images, and returns the summaries, keywords, and table/figure narratives that make documents searchable. Everything else on the machine is CPU plumbing and storage.
 
 One detail worth knowing: page images travel *inside* the requests to Nemotron (base64), because this machine's storage isn't reachable from the internet — that's the `service: openai-base64` line in the values file, and why the model there must be vision-capable.
 
