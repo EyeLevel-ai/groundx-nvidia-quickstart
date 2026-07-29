@@ -4,16 +4,18 @@
 Usage: python scripts/nvidia_workflow.py
 
 This uses GroundX *workflows*: every stage of document processing (document
-summaries, keywords, section summaries, chunk summaries, search-query
-generation) is a configurable step, and any step can run on any
+summaries, keywords, section summaries, chunk summaries, chunk instructions
+for tables and figures, search-query generation) is a configurable step, and any step can run on any
 OpenAI-compatible model — per bucket, changeable at any time, no redeploy.
 
 This script creates a workflow whose steps all run on NVIDIA's hosted
 vision-capable Nemotron, then assigns it to the quickstart bucket. Every
 document loaded into that bucket afterward is processed by NVIDIA models.
 
-Images are sent base64-inside-the-request ("openai-base64") so it works
-whether or not the model can fetch image URLs.
+Image transport is picked automatically: against GroundX cloud, page images
+are referenced by URL (cloud artifacts are publicly accessible); against a
+self-hosted instance (GROUNDX_BASE_URL set), images are sent base64 inside the
+request, because a private machine's URLs aren't reachable by a hosted model.
 """
 
 import os
@@ -30,13 +32,17 @@ BASE = (os.environ.get("GROUNDX_BASE_URL") or "https://api.groundx.ai/api").rstr
 MODEL = os.environ.get("NVIDIA_INGEST_MODEL", "nvidia/llama-3.1-nemotron-nano-vl-8b-v1")
 H = {"X-API-Key": GX_KEY, "Content-Type": "application/json"}
 
+# Cloud artifacts are publicly accessible -> reference images by URL ("openai").
+# Self-hosted artifacts are internal -> embed images base64 ("openai-base64").
+SERVICE = "openai-base64" if os.environ.get("GROUNDX_BASE_URL") else "openai"
+
 # One engine definition, reused by every step.
 ENGINE = {
     "engine": {
         "apiKey": NV_KEY,
         "baseURL": "https://integrate.api.nvidia.com/v1",
-        "engineID": MODEL,          # must be a vision-capable model
-        "service": "openai-base64", # images travel inside the request
+        "engineID": MODEL,   # must be a vision-capable model
+        "service": SERVICE,
     }
 }
 
@@ -44,18 +50,20 @@ ENGINE = {
 WORKFLOW = {
     "name": "nvidia-nemotron",
     "steps": {
-        "doc-summary":   {"all": ENGINE},
-        "doc-keys":      {"all": ENGINE},
-        "sect-summary":  {"all": ENGINE},
-        "sect-keys":     {"all": ENGINE},
-        "chunk-summary": {"all": ENGINE},
-        "search-query":  {"all": ENGINE},
+        "doc-summary":    {"all": ENGINE},
+        "doc-keys":       {"all": ENGINE},
+        "sect-summary":   {"all": ENGINE},
+        "sect-keys":      {"all": ENGINE},
+        "chunk-summary":  {"all": ENGINE},
+        "chunk-instruct": {"all": ENGINE},  # the step that turns tables & figures into searchable text
+        "search-query":   {"all": ENGINE},
     },
 }
 
 # Find or create the workflow by name
-existing = requests.get(f"{BASE}/v1/workflow", headers=H, timeout=30).json()
-match = next((w for w in existing.get("workflows", []) if w.get("name") == "nvidia-nemotron"), None)
+r = requests.get(f"{BASE}/v1/workflow", headers=H, timeout=60)
+r.raise_for_status()  # a failed list must not silently create a duplicate
+match = next((w for w in r.json().get("workflows", []) if w.get("name") == "nvidia-nemotron"), None)
 if match:
     wid = match["workflowId"]
     r = requests.put(f"{BASE}/v1/workflow/{wid}", headers=H, json=WORKFLOW, timeout=30)

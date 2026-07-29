@@ -61,7 +61,7 @@ python -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python scripts/nvidia_workflow.py
 ```
 
-This is GroundX's **workflow** system doing what it's for: every processing stage — document summaries, keywords, section and chunk summaries, search-query generation — is a configurable step, and any step can run on any OpenAI-compatible model, per bucket, changed at runtime with an API call. This command points all of them at NVIDIA's vision-capable Nemotron. The same mechanism swaps prompts, chunking strategy, and models per project without redeploying anything.
+This is GroundX's **workflow** system doing what it's for: every processing stage — document summaries, keywords, section and chunk summaries, the chunk instructions that turn tables and figures into searchable text, search-query generation — is a configurable step, and any step can run on any OpenAI-compatible model, per bucket, changed at runtime with an API call. This command points all of them at NVIDIA's vision-capable Nemotron. The same mechanism swaps prompts, chunking strategy, and models per project without redeploying anything.
 
 **2. Load a document** (the sample is the IRS Form 1040 instructions — 100+ pages of dense tables; processing takes a few minutes, now running on Nemotron):
 
