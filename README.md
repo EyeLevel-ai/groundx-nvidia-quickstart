@@ -1,6 +1,8 @@
 # GroundX × NVIDIA Quickstart
 
-Run a [NeMo Agent Toolkit](https://docs.nvidia.com/nemo/agent-toolkit/1.3/index.html) (v1.3) agent that answers questions over complex documents using **GroundX** as its document-intelligence layer — connected through the GroundX MCP server — with a hosted **Nemotron** NIM endpoint as the agent's language model.
+Run a [NeMo Agent Toolkit](https://docs.nvidia.com/nemo/agent-toolkit/latest/index.html) (v1.8+) agent that answers questions over complex documents using **GroundX** as its document-intelligence layer — connected through the [GroundX MCP server](https://docs.groundx.ai/documentation/agent-harness/connect-hosted-mcp-tools) — with a hosted **Nemotron** NIM endpoint as the agent's language model.
+
+Verified end-to-end 2026-07-29: agent resolves the demo bucket, searches it, and answers with a page-level citation (IRS 1040 instructions, standard deduction, page 35).
 
 **Time to first cited answer: ~15 minutes.** No GroundX engineer required.
 
@@ -54,6 +56,16 @@ scripts/     run_agent.py, ingest.py, cleanup.py
 notebooks/   quickstart.ipynb — the 5-minute guided path
 docs/        nemotron-engine.md (GroundX enrichment on Nemotron), architecture notes
 ```
+
+## Troubleshooting
+
+| Symptom | Cause / fix |
+|---|---|
+| `mcp_client not found` at validate | Install the MCP plugin: `pip install "nvidia-nat[mcp]"` (included in requirements.txt) |
+| `401 Unauthorized` at `/mcp` | The header field is `custom_headers` (not `headers`) under `server:` in the workflow config |
+| Model context-length 400 error after a search | Keep `additional_instructions` telling the agent to pass `"n": 3, "verbosity": 1` to `search_content` — default responses are large |
+| `Session termination failed: 401` warning at exit | Cosmetic — the server rejects the close handshake after successful tool calls; safe to ignore |
+| Agent searches the wrong bucket | Name demo buckets literally (e.g. `irs-tax-documents`) and run demos in a clean account without engineering test buckets |
 
 ## Status
 
