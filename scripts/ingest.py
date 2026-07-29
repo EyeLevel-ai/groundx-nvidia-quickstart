@@ -22,7 +22,8 @@ from groundx import GroundX
 SAMPLE_URL = "https://www.irs.gov/pub/irs-pdf/i1040gi.pdf"
 
 load_dotenv()
-gx = GroundX(api_key=os.environ["GROUNDX_API_KEY"])
+gx = GroundX(api_key=os.environ["GROUNDX_API_KEY"],
+             base_url=os.environ.get("GROUNDX_BASE_URL") or None)  # unset = GroundX cloud
 bucket_name = os.environ.get("GROUNDX_BUCKET", "nvidia-quickstart-demo")
 
 bucket = next((b for b in gx.buckets.list().buckets if b.name == bucket_name), None)

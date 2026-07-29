@@ -1,18 +1,35 @@
 # GroundX + NVIDIA Quickstart
 
-An AI agent that answers questions about your documents and cites the exact page. Built from three parts, connected by one small config file:
+An AI agent that answers questions about your documents and cites the exact page — GroundX reads and searches the documents, NVIDIA Nemotron does the reasoning, and NVIDIA's NeMo Agent Toolkit runs the agent.
 
-- [NVIDIA NeMo Agent Toolkit](https://docs.nvidia.com/nemo/agent-toolkit/latest/index.html) — runs the agent
-- [NVIDIA Nemotron](https://build.nvidia.com) — the language model, on NVIDIA's hosted endpoints
-- [GroundX](https://docs.groundx.ai) — reads and searches the documents, via its [MCP server](https://docs.groundx.ai/documentation/agent-harness/connect-hosted-mcp-tools)
+```mermaid
+flowchart LR
+    A["Agent<br/>(NVIDIA NeMo Agent Toolkit)"]
+    N["Nemotron<br/>(NVIDIA GPUs, hosted)"]
+    G["GroundX<br/>(cloud — or self-hosted<br/>on your NVIDIA GPU)"]
+    U["You"] -->|question| A
+    A <-->|reasoning| N
+    A <-->|document search, page-cited results| G
+```
+
+## Contents
+
+- [What you need](#what-you-need)
+- [Scenario A — GroundX cloud](#scenario-a--groundx-cloud) *(fastest: ~10 minutes)*
+- [Scenario B — self-hosted GroundX + NVIDIA models](#scenario-b--self-hosted-groundx--nvidia-models) *(your machine: ~45 minutes)*
+- [Where your data goes](#where-your-data-goes)
+- [Troubleshooting](#troubleshooting)
 
 ## What you need
 
 - Python 3.11 or newer
 - An NVIDIA API key — free at [build.nvidia.com](https://build.nvidia.com)
 - A GroundX API key — free at [dashboard.groundx.ai](https://dashboard.groundx.ai)
+- Scenario B additionally needs a GPU machine — see [deploy/](deploy/)
 
-## Run it
+## Scenario A — GroundX cloud
+
+Documents go to your GroundX cloud account; nothing to install beyond Python packages.
 
 ```bash
 git clone https://github.com/EyeLevel-ai/groundx-nvidia-quickstart
@@ -27,31 +44,41 @@ python -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python scripts/ingest.py
 ```
 
-**2. Ask a question:**
+**2. Ask the agent a question:**
 
 ```bash
 scripts/run_agent.sh "What is the standard deduction for married filing jointly? Cite the page."
 ```
 
-The agent finds the answer in the document library and cites the page it came from.
-
 **3. Use your own documents:**
 
 ```bash
 .venv/bin/python scripts/ingest.py https://example.com/your-document.pdf
-scripts/run_agent.sh "a question about your document"
 ```
 
-Prefer a notebook? [`notebooks/quickstart.ipynb`](notebooks/quickstart.ipynb) walks the same steps, plus a raw-REST example.
+Prefer a notebook? [`notebooks/quickstart.ipynb`](notebooks/quickstart.ipynb) walks the same steps plus a raw-REST example.
+
+## Scenario B — self-hosted GroundX + NVIDIA models
+
+GroundX runs on your own GPU machine; documents never leave it. NVIDIA's hosted Nemotron handles document enrichment (it receives page images during processing) — and your machine's NVIDIA GPU runs the vision model and search reranker.
+
+1. Install on your machine (or let the AWS script create one): **[deploy/](deploy/)** — one required input, ~45 minutes.
+2. Point the same scripts at your instance by setting one line in `.env`:
+   ```
+   GROUNDX_BASE_URL=http://your-machine:8080/api
+   ```
+3. Load documents and search exactly as in Scenario A.
+
+Note: the agent demo (`run_agent.sh`) uses GroundX's cloud tool endpoint and works with Scenario A; document loading and search in Scenario B are driven through the scripts and notebook.
 
 ## Where your data goes
 
-| Setup | Your documents | The model |
+| Scenario | Your documents | The model |
 |---|---|---|
-| This quickstart | GroundX's hosted service; delete anytime with `scripts/cleanup.py` | NVIDIA's hosted Nemotron receives only retrieved text passages, never files |
-| Self-hosted ([one-machine install](deploy/)) | Stay on your own machine | NVIDIA's hosted Nemotron receives only text passages during document processing |
+| A — cloud | Your GroundX cloud account; delete anytime with `scripts/cleanup.py` | NVIDIA-hosted Nemotron receives text passages at question time, never files |
+| B — self-hosted | Stay on your machine | NVIDIA-hosted Nemotron receives page images during processing and text passages at question time, never files |
 
-API keys travel only in connection headers — never in prompts, tool arguments, or logs. Fully local deployments (model included, air-gap capable) are a production option in the [main deployment repo](https://github.com/eyelevelai/groundx-on-prem).
+API keys travel only in connection headers — never in prompts, tool arguments, or logs. Fully local deployments (models included, air-gap capable) are a production option in the [main deployment repo](https://github.com/eyelevelai/groundx-on-prem).
 
 ## Troubleshooting
 

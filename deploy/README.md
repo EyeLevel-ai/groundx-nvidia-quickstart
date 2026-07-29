@@ -1,6 +1,27 @@
 # GroundX on One GPU Machine, with NVIDIA's Hosted Nemotron
 
-GroundX runs inside your own machine; the language model it calls for document enrichment is NVIDIA's hosted Nemotron. Documents never leave your machine — the model only receives text passages during processing. (Running the language model locally too is a production option covered in the [main deployment repo](https://github.com/eyelevelai/groundx-on-prem), not here.)
+GroundX runs inside your own machine; NVIDIA's hosted Nemotron handles document enrichment. Documents never leave your machine — only page images and text passages go to the model. (Running every model locally is a production option in the [main deployment repo](https://github.com/eyelevelai/groundx-on-prem), not here.)
+
+```mermaid
+flowchart LR
+    subgraph M["Your machine — one NVIDIA GPU"]
+        API["GroundX API"]
+        V["Vision model (your GPU)<br/>reads page layout"]
+        R["Reranker (your GPU)<br/>scores search results"]
+        S[("Storage +<br/>search index")]
+    end
+    N["Nemotron vision model<br/>(NVIDIA GPUs, hosted)"]
+    D["Your documents"] --> API --> V
+    V -->|"page images (base64)"| N
+    N -->|"searchable descriptions"| S
+    Q["Search query"] --> API
+    API <--> R <--> S
+    API -->|"page-cited results"| Q
+```
+
+**The two scripts:**
+- `single-node-install.sh` installs everything onto a GPU machine you already have: a single-node Kubernetes cluster, GroundX's services, the databases and search index they use, and the GPU sharing config — then connects GroundX to NVIDIA's hosted Nemotron.
+- `provision-and-install-aws.sh` first creates that machine on AWS (GPU instance, correct image, disk), then runs the installer on it. Start here if you have nothing but an AWS account.
 
 ## Required
 
@@ -28,20 +49,13 @@ export NVIDIA_API_KEY=nvapi-... SUBNET_ID=subnet-... SECURITY_GROUP_ID=sg-...
 
 30–45 minutes either way, mostly downloads. Done when every pod in the `eyelevel` namespace shows `Running`.
 
-## What uses GPUs, and for what
+## GPU use, in one breath
 
-**On your GPU (the machine this installs):**
+Your GPU runs two models: the **vision model** that reads each page's layout during processing, and the **reranker** that scores results on every search. NVIDIA's hosted GPUs run **Nemotron**, which looks at each page image and writes the descriptions that make tables and figures searchable. Everything else on the machine is CPU plumbing and storage.
 
-| Model | Job |
-|---|---|
-| Vision model | Reads every page's layout — tables, figures, text regions — during document processing |
-| Reranker | Re-scores results for relevance on every search |
+One detail worth knowing: page images travel *inside* the requests to Nemotron (base64), because this machine's storage isn't reachable from the internet — that's the `service: openai-base64` line in the values file, and why the model there must be vision-capable.
 
-**On NVIDIA's GPUs (hosted Nemotron, via your API key):** a vision-capable Nemotron receives each page image during processing and writes the descriptions that make tables and figures searchable. Images travel inside the request (base64) because this machine's storage isn't reachable from outside — that's the `service: openai-base64` setting in the values file, and it's why the model must be vision-capable.
-
-Everything else on the machine is CPU-only plumbing: intake, queues, orchestration, OCR, the API, and storage (MySQL, MinIO, OpenSearch, Kafka).
-
-Two local models leave the GPU headroom: tested on a 48GB L40S; should fit a 24GB GPU (not yet verified).
+Tested on a 48GB L40S with room to spare; should fit a 24GB GPU (not yet verified).
 
 ## Changing the NVIDIA model
 
