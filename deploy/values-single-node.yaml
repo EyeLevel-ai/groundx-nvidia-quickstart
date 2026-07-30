@@ -13,9 +13,13 @@
 #                                        values.tenant.yaml in eyelevelai/groundx-on-prem)
 # ──────────────────────────────────────────────────────────────────────────────
 
+# Demo placeholder — works as-is for this single-node demo profile; no license
+# needs to be obtained first. Production installs get a real key from EyeLevel.
 licenseKey: "00000000-0000-0000-0000-000000000000"
 
 admin:
+  # Works as-is: this exact value becomes your API key for the installed
+  # instance (the X-API-Key header / GROUNDX_API_KEY in .env).
   apiKey: "00000000-0000-0000-0000-000000000000"
   email: "admin@example.com"
   password: "password"

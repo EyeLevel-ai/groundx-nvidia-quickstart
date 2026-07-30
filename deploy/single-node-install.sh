@@ -2,6 +2,9 @@
 # Install GroundX on ONE machine with ONE NVIDIA GPU, using NVIDIA's hosted
 # Nemotron as the language model.
 #
+# ── WARNING ──────────────────────────────────────────────────────────────────
+#   This script runs `minikube delete` first: any existing minikube cluster on
+#   this machine is destroyed. Run it on a fresh or dedicated machine.
 # ── REQUIRED before running ──────────────────────────────────────────────────
 #   export NVIDIA_API_KEY=nvapi-...     free at https://build.nvidia.com
 #   That's it. Everything else has working defaults.
@@ -46,6 +49,7 @@ command -v helm >/dev/null || {
 # --- 1. Single-node Kubernetes with GPU ------------------------------------
 # Kubernetes is pinned to 1.31: newer versions break the Kafka operator
 # version this chart needs.
+# NOTE: destroys any existing minikube cluster (see WARNING in the header).
 minikube delete 2>/dev/null || true
 minikube start --driver=docker --gpus=all --cpus=7 --memory=49152 \
   --disk-size=300g --kubernetes-version=v1.31.9

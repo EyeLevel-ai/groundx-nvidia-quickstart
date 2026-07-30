@@ -2,13 +2,13 @@
 """Load documents into GroundX so the agent has something to search.
 
 Usage:
-  python scripts/ingest.py                 # loads the sample document (IRS Form 1040 instructions)
+  python scripts/ingest.py                 # loads the sample document (IRS Publication 501, ~30 pages)
   python scripts/ingest.py URL [URL ...]   # loads your own documents by URL
   python scripts/ingest.py FILE [FILE ...] # loads local files
 
 Creates the bucket named in GROUNDX_BUCKET (default: nvidia-quickstart-demo)
-if it doesn't exist, then waits for processing to finish. A large document
-takes several minutes; the sample is ~100 pages.
+if it doesn't exist, then waits for processing to finish. Processing time
+scales with page count; the ~30-page sample takes a few minutes.
 """
 
 import os
@@ -19,7 +19,7 @@ import time
 from dotenv import load_dotenv
 from groundx import GroundX
 
-SAMPLE_URL = "https://www.irs.gov/pub/irs-pdf/i1040gi.pdf"
+SAMPLE_URL = "https://www.irs.gov/pub/irs-pdf/p501.pdf"
 
 load_dotenv()
 gx = GroundX(api_key=os.environ["GROUNDX_API_KEY"],

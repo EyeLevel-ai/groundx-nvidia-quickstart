@@ -7,8 +7,8 @@ Build an AI agent that answers questions about complex documents and cites the e
 - [Scenario B — self-hosted GroundX + NVIDIA models](#scenario-b--self-hosted-groundx--nvidia-models) *(your GPU machine: ~45 minutes)*
 - [How it works](#how-it-works)
 - [Where your data goes](#where-your-data-goes)
-- [Drive it from your coding agent](#drive-it-from-your-coding-agent)
-- [Go deeper](#go-deeper) · [Troubleshooting](#troubleshooting)
+- [Go deeper](#go-deeper)
+- [Drive it from your coding agent](#drive-it-from-your-coding-agent) · [Troubleshooting](#troubleshooting)
 
 ## What you need
 
@@ -36,7 +36,7 @@ python -m venv .venv && .venv/bin/pip install -r requirements.txt
 
 GroundX **workflows** make every processing stage a runtime-configurable step; this command points them all at NVIDIA's vision-capable Nemotron. The mechanism — and two endpoint gotchas worth knowing — is in [docs/nemotron-engine.md](docs/nemotron-engine.md); [How it works](#how-it-works) below describes what the stages produce.
 
-**2. Load a document** (the sample is the IRS Form 1040 instructions — 100+ pages of dense tables; processing takes a few minutes, running on Nemotron):
+**2. Load a document** (the sample is IRS Publication 501 — ~30 pages of dense tables and worksheets; processing takes a few minutes, running on Nemotron):
 
 ```bash
 .venv/bin/python scripts/ingest.py
@@ -48,9 +48,10 @@ GroundX **workflows** make every processing stage a runtime-configurable step; t
 scripts/run_agent.sh "What is the standard deduction for married filing jointly? Cite the page."
 ```
 
-**4. Use your own documents:**
+**4. Try something harder, or your own documents** (the 114-page IRS Form 1040 instructions are a good stress test):
 
 ```bash
+.venv/bin/python scripts/ingest.py https://www.irs.gov/pub/irs-pdf/i1040gi.pdf
 .venv/bin/python scripts/ingest.py https://example.com/your-document.pdf
 ```
 
@@ -58,12 +59,15 @@ Prefer a notebook? [`notebooks/quickstart.ipynb`](notebooks/quickstart.ipynb) wa
 
 ## Scenario B — self-hosted GroundX + NVIDIA models
 
-The payoff: the full notebook flow — cited answers with page and bounding-box provenance — against documents that never leave your machine. Your NVIDIA GPU runs GroundX's page-reading vision model and search reranker; NVIDIA's hosted Nemotron handles enrichment. **Scope:** Scenario B covers loading and search (scripts and notebook, sections 1–6); the agent demo (`run_agent.sh`) connects to GroundX's hosted MCP tool server, which this single-node build doesn't include — an MCP service for self-hosted deployments is tracked on the [main deployment repo](https://github.com/eyelevelai/groundx-on-prem)'s roadmap.
+> **Scope: this covers loading and cited search — scripts and notebook sections 1–6. The agent demo (`run_agent.sh`) is cloud-only:** it needs GroundX's hosted MCP tool server, which the single-node build doesn't include (an MCP service for self-hosted deployments is on the [main deployment repo](https://github.com/eyelevelai/groundx-on-prem)'s roadmap).
+
+The payoff: cited answers with page and bounding-box provenance, against documents that never leave your machine. Your NVIDIA GPU runs GroundX's page-reading vision model and search reranker; NVIDIA's hosted Nemotron handles enrichment.
 
 1. Install on your machine, or let the AWS script create one: **[deploy/](deploy/)** — one required input, ~45 minutes. The NVIDIA model choice lives in Helm values here (deployment configuration); workflows work on top of it exactly as in Scenario A.
-2. Run the quickstart scripts **on that machine**, pointing them at the local API with one line in `.env` (the deploy guide's "Use it" section shows the port-forward that makes this address work):
+2. Run the quickstart scripts **on that machine**, pointing them at the local API with two lines in `.env` (the deploy guide's "Use it" section shows the port-forward that makes this address work; the key is `admin.apiKey` from [`deploy/values-single-node.yaml`](deploy/values-single-node.yaml)):
    ```
    GROUNDX_BASE_URL=http://localhost:8080/api
+   GROUNDX_API_KEY=<admin.apiKey from deploy/values-single-node.yaml>
    ```
 3. Load documents and search exactly as in Scenario A.
 
@@ -88,7 +92,13 @@ flowchart LR
     S -- "ranked passages: text, score,<br/>page + exact location" --> A --> R["Cited answer"]
 ```
 
-**Why this design.** The vision model reads layout the way a person does, which is why accuracy holds on documents that break text-only pipelines. In production at Air France/KLM, it exceeded the customer's 60% accuracy target; EyeLevel's [head-to-head test](https://www.eyelevel.ai/post/most-accurate-rag) is public, and a preregistered head-to-head against NVIDIA's own RAG blueprint is taking shape in the [eval harness repo](https://github.com/EyeLevel-ai/groundx-doc-eval-harness) — rules drafted, lock pending NVIDIA's review of the corpus and questions. The pre-committed [win bar](https://github.com/EyeLevel-ai/groundx-doc-eval-harness/blob/main/preregistration/decision-rule.md): "a win may be claimed only when the bottom of GroundX's accuracy confidence range sits above the top of the comparison system's range, according to both graders independently." Because pages become small typed elements first, compact fast models handle the enrichment — no frontier-scale model needed at ingest. And the same product runs as cloud or self-hosted ([public Helm chart](https://github.com/eyelevelai/groundx-on-prem), air-gap capable), configured by Helm values at deployment and by workflows at runtime.
+**Why this design.**
+
+- **Accuracy is architectural.** The vision model reads layout the way a person does, which is why accuracy holds on documents that break text-only pipelines.
+- **Proven in production.** At Air France/KLM, GroundX reached 96.2% accuracy against the project's 60% target; EyeLevel's [head-to-head test](https://www.eyelevel.ai/post/most-accurate-rag) is public.
+- **Measured under preregistered rules.** A head-to-head against NVIDIA's own RAG blueprint is taking shape in the [eval harness repo](https://github.com/EyeLevel-ai/groundx-doc-eval-harness) — rules drafted; NVIDIA is invited to review the corpus and questions before lock. The pre-committed [win bar](https://github.com/EyeLevel-ai/groundx-doc-eval-harness/blob/main/preregistration/decision-rule.md): "a win may be claimed only when the bottom of GroundX's accuracy confidence range sits above the top of the comparison system's range, according to both graders independently."
+- **Small models suffice.** Because pages become small typed elements first, compact fast models handle the enrichment — no frontier-scale model needed at ingest.
+- **Runs anywhere.** The same product runs as cloud or self-hosted ([public Helm chart](https://github.com/eyelevelai/groundx-on-prem), air-gap capable), configured by Helm values at deployment and by workflows at runtime.
 
 ## Where your data goes
 
@@ -102,17 +112,6 @@ flowchart LR
 
 Raw document files never go to NVIDIA in either scenario. API keys travel only in connection headers — never in prompts, tool arguments, or logs. Fully local deployments (every model included, air-gap capable) are a production option in the [main deployment repo](https://github.com/eyelevelai/groundx-on-prem).
 
-## Drive it from your coding agent
-
-Everything above can also be done conversationally. The [GroundX Agent Harness](https://github.com/GroundX-Studio/groundx-agent-harness) is a free skills bundle that makes Claude Code, Codex, and similar assistants fluent in GroundX — ingest and search, workflows, structured extraction, and self-hosted deployment planning:
-
-```bash
-claude plugin marketplace add GroundX-Studio/groundx-agent-harness
-claude plugin install groundx-agent-harness@groundx-agent-harness
-```
-
-Then ask in your own words — *"Why is my document stuck in processing?"*, *"Create a workflow like nvidia-nemotron with a custom chunk prompt for financial tables."* The [harness repo](https://github.com/GroundX-Studio/groundx-agent-harness) lists the full skill set and setup for other clients. Set `GROUNDX_API_KEY` in the shell that starts your agent, and treat it like any credential — the agent can create and delete documents and buckets with it.
-
 ## Go deeper
 
 - [Security fact sheet](docs/it-reviewer-fact-sheet.md) — what runs where and what leaves the firewall, per configuration
@@ -121,6 +120,17 @@ Then ask in your own words — *"Why is my document stuck in processing?"*, *"Cr
 - [Preregistered eval vs NVIDIA's RAG blueprint](https://github.com/EyeLevel-ai/groundx-doc-eval-harness) — a four-system head-to-head with the rules checksummed before any system runs
 - [AI-Q knowledge backend](aiq/) — GroundX as a retrieval backend for NVIDIA's AI-Q research agent, written to its documented plug-in contract *(experimental; not yet validated inside an AI-Q workflow)*
 
+## Drive it from your coding agent
+
+Everything above can also be done conversationally. The [GroundX Agent Harness](https://github.com/GroundX-Studio/groundx-agent-harness) is a free skills bundle that makes Claude Code, Codex, and similar assistants fluent in GroundX — ingest and search, workflows, structured extraction, self-hosted deployment planning:
+
+```bash
+claude plugin marketplace add GroundX-Studio/groundx-agent-harness
+claude plugin install groundx-agent-harness@groundx-agent-harness
+```
+
+Then ask in your own words — *"Why is my document stuck in processing?"* Set `GROUNDX_API_KEY` in the shell that starts your agent, and treat it like any credential — the agent can create and delete documents and buckets with it. Setup for other clients is in the [harness repo](https://github.com/GroundX-Studio/groundx-agent-harness).
+
 ## Troubleshooting
 
 | Symptom | Fix |
@@ -128,5 +138,6 @@ Then ask in your own words — *"Why is my document stuck in processing?"*, *"Cr
 | `mcp_client not found` when validating the config | Install from `requirements.txt` — it includes the MCP plugin |
 | `401 Unauthorized` connecting to GroundX | The header block in `configs/groundx_agent.yml` must be `custom_headers`, and `GROUNDX_API_KEY` must be set in `.env` |
 | Model error about context length after a search | Keep the `additional_instructions` block in the config — it tells the agent to request small search responses |
+| Model returns empty/`null` content with `finish_reason: length` | You're on a reasoning model without the `/no_think` toggle or enough `max_tokens` — see [Gotcha 1](docs/nemotron-engine.md#gotcha-1--reasoning-models-return-null-content-by-default) |
 | `Session termination failed: 401` warning at exit | Harmless; appears after the tools have already succeeded |
 | Agent searches the wrong bucket | Ask questions that name the bucket, or keep the account free of unrelated buckets |

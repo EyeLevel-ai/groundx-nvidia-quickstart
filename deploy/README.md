@@ -30,12 +30,15 @@ flowchart LR
 
 - Either path: `export NVIDIA_API_KEY=nvapi-...` — free at [build.nvidia.com](https://build.nvidia.com)
 - AWS script only, additionally: `SUBNET_ID`, `SECURITY_GROUP_ID`, a logged-in AWS CLI, and an instance profile with Systems Manager access (its header lists them too)
+- No GroundX license needed first: the placeholder `licenseKey` and `admin.apiKey` in `values-single-node.yaml` work as-is for this demo profile — `admin.apiKey` is the API key you'll use verbatim in "Use it" below
 
 ## Optional
 
 - Demo passwords (admin login, database, object storage) — listed in the header of `values-single-node.yaml`. Fine to leave for a demo; change them for anything else.
 
 ## Run it
+
+> **Warning:** `single-node-install.sh` runs `minikube delete` first — it destroys any existing minikube cluster on the machine. Use a fresh or dedicated machine.
 
 Already have a GPU machine (Ubuntu 22.04, one NVIDIA GPU, 8 cores, 64GB RAM, 500GB disk, Docker + NVIDIA Container Toolkit — an AWS g6e.2xlarge with the Deep Learning Base GPU AMI matches):
 
@@ -86,5 +89,7 @@ Then point the quickstart scripts at it: in `.env`, set `GROUNDX_BASE_URL=http:/
 
 ## Measured (July 2026, one 48GB L40S)
 
-- Document processing: a 114-page IRS instruction booklet fully processed in 62 minutes (~110 pages/hour). Measured on the previous profile; this profile should be faster (see the [sizing worksheet](../docs/sizing-worksheet.md)) — re-measurement pending
+- Document processing: a 114-page IRS instruction booklet fully processed in 62 minutes (~110 pages/hour)
 - Search: ~3 seconds per query
+
+Measurement details, caveats, and projections for this profile: [sizing worksheet](../docs/sizing-worksheet.md).
