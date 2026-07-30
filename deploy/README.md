@@ -22,6 +22,8 @@ flowchart LR
     API -->|"page-cited results"| Q
 ```
 
+Your coding agent with the [GroundX Agent Harness](https://github.com/GroundX-Studio/groundx-agent-harness) is a useful companion here — it can read pod state, explain what a service is waiting on, and adjust worker counts — but the scripts below lead, because they encode fixes for undocumented single-node blockers that the harness skills don't cover yet.
+
 **The two scripts:**
 - `single-node-install.sh` installs everything onto a GPU machine you already have: a single-node Kubernetes cluster, GroundX's services, the databases and search index they use, and the GPU sharing config — then connects GroundX to NVIDIA's hosted Nemotron.
 - `provision-and-install-aws.sh` first creates that machine on AWS (GPU instance, correct image, disk), then runs the installer on it. Start here if you have nothing but an AWS account.
