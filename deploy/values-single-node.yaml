@@ -49,8 +49,8 @@ engines:
     vision: true
     maxInputTokens: 100000
     maxOutputTokens: 8192
-    maxRequests: 8
-    requestLimit: 8
+    maxRequests: 8      # max concurrent in-flight requests to the model
+    requestLimit: 8     # rate-limit threshold on request volume
 
 # The bundled local language model is OFF — Nemotron above replaces it.
 # This frees ~19GB of GPU memory for the two models that do run locally.

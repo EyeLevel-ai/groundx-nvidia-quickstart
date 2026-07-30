@@ -20,7 +20,7 @@
 
 - Documents, extracted artifacts, and search indexes live in your cluster's storage (MinIO/S3-compatible object store, OpenSearch, MySQL).
 - Deletion: per-document and per-bucket delete via API; storage is under your retention policies.
-- Every search result carries provenance (document, page, bounding box) — auditability is structural, not bolted on.
+- Every search result carries provenance (document, page, bounding box).
 
 ## Deployment surface
 

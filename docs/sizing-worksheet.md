@@ -9,7 +9,7 @@ Converts document volume into GPU capacity — standing volume, not a one-time b
 | Machine | AWS g6e.2xlarge — one NVIDIA L40S (48GB), 8 cores, 64GB RAM |
 | Configuration | Full GroundX stack on one machine. *This measurement ran three models on the GPU (vision, language, reranker); the current quickstart profile moves the language model to NVIDIA's hosted Nemotron, freeing ~19GB* |
 | Document processing | 114-page IRS instruction booklet, fully processed: **62 minutes (~110 pages/hour)** |
-| Search | **~3.1s median** per query (10 distinct queries); ~42ms when repeated (cached) |
+| Search | **~3.1s median** per query (10 distinct queries) |
 
 ## What limits a single GPU (measured, not theoretical)
 

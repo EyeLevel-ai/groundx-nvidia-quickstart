@@ -35,5 +35,6 @@ workflow:
   additional_instructions: |
     When calling search_content, ALWAYS include "n": 3 and "verbosity": 1 in the
     input to keep responses small. Answers must cite the page number from the
-    result's boundingBoxes. When asked about a named bucket, first list buckets
-    to resolve its id.
+    result's boundingBoxes. Search the bucket named "nvidia-quickstart-demo"
+    unless the question names another bucket; first list buckets to resolve the
+    name to its id.

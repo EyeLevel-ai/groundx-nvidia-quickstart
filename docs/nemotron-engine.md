@@ -22,9 +22,7 @@ This repo uses two Nemotron models in two different roles — don't swap them:
 | **Agent LLM** (text reasoning, `configs/groundx_agent.yml`) | `nvidia/llama-3.3-nemotron-super-49b-v1.5` | `/no_think` system message when you want plain content; otherwise a generous `max_tokens` (Gotcha 1) |
 | **Document-processing engine** (vision, the `engines` block / workflows) | `nvidia/llama-3.1-nemotron-nano-vl-8b-v1` | Must be vision-capable; `vision: true` and `service: openai-base64` on self-hosted (see below) |
 
-Both use base URL `https://integrate.api.nvidia.com/v1` and `Authorization: Bearer $NVIDIA_API_KEY`.
-
-Verified for the agent LLM: `temperature: 0`, deterministic short completion, `finish_reason: stop`, clean `usage` block (36 total tokens for the smoke test).
+Both use base URL `https://integrate.api.nvidia.com/v1` and `Authorization: Bearer $NVIDIA_API_KEY`; both verified by direct invocation on 2026-07-28.
 
 ### Gotcha 1 — reasoning models return null `content` by default
 

@@ -1,22 +1,26 @@
 # GroundX as an AI-Q Knowledge Backend
 
-GroundX plugged into NVIDIA's [AI-Q research agent](https://github.com/NVIDIA-AI-Blueprints/aiq) through its documented knowledge-layer plug-in contract. Two files:
+A working retriever adapter that plugs GroundX into NVIDIA's [AI-Q research agent](https://github.com/NVIDIA-AI-Blueprints/aiq) through its published knowledge-layer plug-in contract. Collections map to GroundX buckets; every chunk carries page-level provenance from GroundX bounding boxes, satisfying the knowledge layer's citation contract.
 
-- **`groundx_backend/adapter.py`** — a retriever backend registered as `groundx`. Collections map to GroundX buckets; every chunk carries page-level provenance from GroundX bounding boxes, satisfying the knowledge layer's citation contract.
-- **`config_web_groundx.yml`** — **a delta, not a runnable config.** It documents only the `knowledge_search` block that differs from upstream's `config_web_opensearch.yml`; identical sections are copied from upstream at install time.
+> **Status:** smoke-checked live (5/5) against the contract as of July 2026 — the adapter compiles, the config delta parses, and a live GroundX search returns every field the adapter maps (`score`, `fileName`, `boundingBoxes.pageNumber`). Not yet validated inside a running AI-Q workflow; that needs one review slot with an AI-Q checkout.
 
-## Status
+Two files:
 
-Written against the AI-Q knowledge-layer contract as of July 2026 and smoke-checked outside an AI-Q checkout with:
+- **`groundx_backend/adapter.py`** — a retriever backend registered as `groundx`.
+- **`config_web_groundx.yml`** — a delta over upstream's `config_web_opensearch.yml`: only the `knowledge_search` block differs.
+
+Re-run the smoke check yourself:
 
 ```bash
 GROUNDX_API_KEY=... python aiq/smoke_test.py
 ```
 
-The smoke test verifies that the adapter compiles, the config delta parses with the required keys, and a live GroundX search returns every field the adapter maps (`score`, `fileName`, `boundingBoxes.pageNumber`). Full in-workflow validation — the adapter imported and driven by `aiq_agent` — requires an AI-Q checkout and has not been run here.
-
 ## Install into an AI-Q checkout
 
-1. Copy `groundx_backend/` into `sources/knowledge_layer/src/groundx_backend/` and register it per the AI-Q docs (`KNOWLEDGE-LAYER-SETUP.md`, "Building a Custom Backend").
-2. Merge the `knowledge_search` block from `config_web_groundx.yml` into a copy of upstream's `config_web_opensearch.yml`, and add the commented `data_source_registry` entry to the registry list.
-3. Export `GROUNDX_API_KEY` (and `NVIDIA_API_KEY`) and start the workflow as usual.
+AI-Q registers custom backends by editing its own source — the exact steps are its `sources/knowledge_layer/KNOWLEDGE-LAYER-SETUP.md`, "Building a Custom Backend" (paths below verified against upstream, July 2026):
+
+1. Copy `groundx_backend/` to `sources/knowledge_layer/src/groundx_backend/` (Steps 1–3 of the upstream guide — the adapter and `__init__.py` are already written).
+2. Add `knowledge_layer.groundx_backend` to the `packages` list in `sources/knowledge_layer/pyproject.toml` (Step 4).
+3. Edit `sources/knowledge_layer/src/register.py` per Step 5: add `"groundx"` to the `BackendType` literal, add `groundx_api_key` / `groundx_base_url` fields to `KnowledgeRetrievalConfig`, and add a `groundx` case to `_setup_backend()` that imports `knowledge_layer.groundx_backend.adapter` and passes those two fields through.
+4. Merge the `knowledge_search` block from `config_web_groundx.yml` into a copy of upstream's `configs/config_web_opensearch.yml`, and add the commented `data_source_registry` entry to the registry list.
+5. Export `GROUNDX_API_KEY` (and `NVIDIA_API_KEY`) and start the workflow as usual.

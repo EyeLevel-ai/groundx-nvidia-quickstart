@@ -10,6 +10,14 @@ Build an AI agent that answers questions about complex documents and cites the e
 - [Go deeper](#go-deeper)
 - [Drive it from your coding agent](#drive-it-from-your-coding-agent) · [Troubleshooting](#troubleshooting)
 
+What each path covers, at a glance:
+
+| | Scenario A — cloud | Scenario B — self-hosted | [Production repo](https://github.com/eyelevelai/groundx-on-prem) |
+|---|---|---|---|
+| Load documents + cited search | ✓ | ✓ | ✓ |
+| Agent demo (`run_agent.sh`) | ✓ | ✗ — needs the hosted MCP server (on that repo's roadmap for self-hosted) | roadmap |
+| Air-gapped (every model local) | — | ✗ — enrichment calls NVIDIA-hosted Nemotron | ✓ |
+
 ## What you need
 
 - Python 3.11 or newer
@@ -59,21 +67,21 @@ Prefer a notebook? [`notebooks/quickstart.ipynb`](notebooks/quickstart.ipynb) wa
 
 ## Scenario B — self-hosted GroundX + NVIDIA models
 
-> **Scope: this covers loading and cited search — scripts and notebook sections 1–6. The agent demo (`run_agent.sh`) is cloud-only:** it needs GroundX's hosted MCP tool server, which the single-node build doesn't include (an MCP service for self-hosted deployments is on the [main deployment repo](https://github.com/eyelevelai/groundx-on-prem)'s roadmap).
+> **Scope: loading and cited search — scripts and notebook sections 1–6. The agent demo (`run_agent.sh`) is cloud-only** (see the table up top): it needs GroundX's hosted MCP tool server, which the single-node build doesn't include.
 
 The payoff: cited answers with page and bounding-box provenance, against documents that never leave your machine. Your NVIDIA GPU runs GroundX's page-reading vision model and search reranker; NVIDIA's hosted Nemotron handles enrichment.
 
 1. Install on your machine, or let the AWS script create one: **[deploy/](deploy/)** — one required input, ~45 minutes. The NVIDIA model choice lives in Helm values here (deployment configuration); workflows work on top of it exactly as in Scenario A.
-2. Run the quickstart scripts **on that machine**, pointing them at the local API with two lines in `.env` (the deploy guide's "Use it" section shows the port-forward that makes this address work; the key is `admin.apiKey` from [`deploy/values-single-node.yaml`](deploy/values-single-node.yaml)):
+2. Run the quickstart scripts **on that machine**, pointing them at the local API with two lines in `.env`. The deploy guide's "Use it" section shows the port-forward that makes this address work; the key is `admin.apiKey` from [`deploy/values-single-node.yaml`](deploy/values-single-node.yaml):
    ```
    GROUNDX_BASE_URL=http://localhost:8080/api
    GROUNDX_API_KEY=<admin.apiKey from deploy/values-single-node.yaml>
    ```
-3. Load documents and search exactly as in Scenario A.
+3. Load documents and search exactly as in Scenario A. Local processing is slower than cloud: expect the ~30-page sample to take roughly 15–20 minutes at the [measured](docs/sizing-worksheet.md) ~110 pages/hour — it isn't hung.
 
 ## How it works
 
-**Ingestion.** GroundX's own vision model maps every page into typed elements — tables, figures, text blocks. Then, for each element, section, and document, workflow steps call Nemotron with the step's prompt, the extracted text, and the page and element images. What comes back is much more than captions: document and section summaries, keywords at every level, plain-language narratives and structured data for each table and figure, retrieval-optimized search queries, and multiple renderings of every chunk (original text, an LLM-tuned version, a search-tuned version). All of it lands in the search index — and in a per-document JSON (the "X-Ray") you can download and inspect; section 6 of [the notebook](notebooks/quickstart.ipynb) fetches and prints one.
+**Ingestion.** GroundX's own vision model maps every page into typed elements — tables, figures, text blocks. Then, for each element, section, and document, workflow steps call Nemotron with the step's prompt, the extracted text, and the page and element images. What comes back is much more than captions: summaries and keywords at every level, plain-language narratives and structured data for each table and figure, retrieval-optimized search queries, and multiple renderings of every chunk. All of it lands in the search index — and in a per-document JSON (the "X-Ray") you can download and inspect; section 6 of [the notebook](notebooks/quickstart.ipynb) fetches and prints one.
 
 ```mermaid
 flowchart LR
@@ -94,9 +102,7 @@ flowchart LR
 
 **Why this design.**
 
-- **Accuracy is architectural.** The vision model reads layout the way a person does, which is why accuracy holds on documents that break text-only pipelines.
-- **Proven in production.** At Air France/KLM, GroundX reached 96.2% accuracy against the project's 60% target; EyeLevel's [head-to-head test](https://www.eyelevel.ai/post/most-accurate-rag) is public.
-- **Measured under preregistered rules.** A head-to-head against NVIDIA's own RAG blueprint is taking shape in the [eval harness repo](https://github.com/EyeLevel-ai/groundx-doc-eval-harness) — rules drafted; NVIDIA is invited to review the corpus and questions before lock. The pre-committed [win bar](https://github.com/EyeLevel-ai/groundx-doc-eval-harness/blob/main/preregistration/decision-rule.md): "a win may be claimed only when the bottom of GroundX's accuracy confidence range sits above the top of the comparison system's range, according to both graders independently."
+- **Tested in public.** EyeLevel's [head-to-head accuracy test](https://www.eyelevel.ai/post/most-accurate-rag) is published, and a preregistered eval against NVIDIA's own RAG blueprint is in progress in the [eval harness repo](https://github.com/EyeLevel-ai/groundx-doc-eval-harness) — rules drafted, results pending; NVIDIA is invited to review the corpus and questions before lock, and the [win bar](https://github.com/EyeLevel-ai/groundx-doc-eval-harness/blob/main/preregistration/decision-rule.md) is committed before any system runs.
 - **Small models suffice.** Because pages become small typed elements first, compact fast models handle the enrichment — no frontier-scale model needed at ingest.
 - **Runs anywhere.** The same product runs as cloud or self-hosted ([public Helm chart](https://github.com/eyelevelai/groundx-on-prem), air-gap capable), configured by Helm values at deployment and by workflows at runtime.
 
@@ -118,7 +124,7 @@ Raw document files never go to NVIDIA in either scenario. API keys travel only i
 - [GPU sizing](docs/sizing-worksheet.md) — measured throughput and how document volume converts to GPU count
 - [Running GroundX on NVIDIA models](docs/nemotron-engine.md) — the two configuration surfaces and endpoint findings
 - [Preregistered eval vs NVIDIA's RAG blueprint](https://github.com/EyeLevel-ai/groundx-doc-eval-harness) — a four-system head-to-head with the rules checksummed before any system runs
-- [AI-Q knowledge backend](aiq/) — GroundX as a retrieval backend for NVIDIA's AI-Q research agent, written to its documented plug-in contract *(experimental; not yet validated inside an AI-Q workflow)*
+- [AI-Q knowledge backend](aiq/) — GroundX as a retrieval backend for NVIDIA's AI-Q research agent, written to its documented plug-in contract and smoke-checked live *(not yet validated inside an AI-Q workflow)*
 
 ## Drive it from your coding agent
 
@@ -140,4 +146,4 @@ Then ask in your own words — *"Why is my document stuck in processing?"* Set `
 | Model error about context length after a search | Keep the `additional_instructions` block in the config — it tells the agent to request small search responses |
 | Model returns empty/`null` content with `finish_reason: length` | You're on a reasoning model without the `/no_think` toggle or enough `max_tokens` — see [Gotcha 1](docs/nemotron-engine.md#gotcha-1--reasoning-models-return-null-content-by-default) |
 | `Session termination failed: 401` warning at exit | Harmless; appears after the tools have already succeeded |
-| Agent searches the wrong bucket | Ask questions that name the bucket, or keep the account free of unrelated buckets |
+| Agent searches the wrong bucket | The agent defaults to the `nvidia-quickstart-demo` bucket (pinned in `additional_instructions`, [`configs/groundx_agent.yml`](configs/groundx_agent.yml)) — name another bucket in the question, or edit that line if you changed `GROUNDX_BUCKET` |

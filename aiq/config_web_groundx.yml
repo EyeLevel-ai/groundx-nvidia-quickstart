@@ -1,16 +1,9 @@
-# NOT RUNNABLE AS-IS — this file is a delta over upstream's
-# config_web_opensearch.yml; see aiq/README.md for the install steps.
+# Delta over upstream's config_web_opensearch.yml — not runnable by itself;
+# aiq/README.md has the numbered install steps.
 #
 # AI-Q Web-mode workflow with GroundX as the knowledge-layer backend.
-# Drop-in variant of configs/config_web_opensearch.yml from NVIDIA-AI-Blueprints/aiq:
-# only the knowledge_search block differs — the "decomposable knowledge layer"
-# working exactly as designed.
-#
-# Install (inside an AI-Q checkout, after copying aiq/groundx_backend/ into
-# sources/knowledge_layer/src/groundx_backend/ and registering it per
-# sources/knowledge_layer/KNOWLEDGE-LAYER-SETUP.md "Building a Custom Backend"):
-#   export GROUNDX_API_KEY=...   # transport-header auth only
-#   export NVIDIA_API_KEY=...
+# Only the knowledge_search block differs from upstream — the "decomposable
+# knowledge layer" working exactly as designed.
 #
 # Everything below knowledge_search follows the upstream config; sections that
 # are identical to config_web_opensearch.yml are elided here and should be

@@ -92,4 +92,4 @@ Then point the quickstart scripts at it: in `.env`, set `GROUNDX_BASE_URL=http:/
 - Document processing: a 114-page IRS instruction booklet fully processed in 62 minutes (~110 pages/hour)
 - Search: ~3 seconds per query
 
-Measurement details, caveats, and projections for this profile: [sizing worksheet](../docs/sizing-worksheet.md).
+One caveat, stated plainly: the processing measurement ran an earlier configuration with the language model local on the GPU. The profile this directory ships (language model on NVIDIA-hosted Nemotron) is projected ~1.5–2× faster but **not yet re-measured**. Details and projections: [sizing worksheet](../docs/sizing-worksheet.md).
