@@ -7,8 +7,9 @@ Build an AI agent that answers questions about complex documents and cites the e
 - [Scenario B — self-hosted GroundX + NVIDIA models](#scenario-b--self-hosted-groundx--nvidia-models) *(your GPU machine: ~45 minutes)*
 - [How it works](#how-it-works)
 - [Where your data goes](#where-your-data-goes)
+- [Drive it from your coding agent](#drive-it-from-your-coding-agent)
 - [Go deeper](#go-deeper)
-- [Drive it from your coding agent](#drive-it-from-your-coding-agent) · [Troubleshooting](#troubleshooting)
+- [Troubleshooting](#troubleshooting)
 
 What each path demonstrates:
 
@@ -76,7 +77,10 @@ The payoff: cited answers with page and bounding-box provenance, against documen
    ```bash
    git clone https://github.com/EyeLevel-ai/groundx-nvidia-quickstart && cd groundx-nvidia-quickstart
    python -m venv .venv && .venv/bin/pip install -r requirements.txt && cp .env.example .env
-   ```   The deploy guide's "Use it" section shows the port-forward that makes this address work; the key is `admin.apiKey` from [`deploy/values-single-node.yaml`](deploy/values-single-node.yaml):
+   ```
+
+   Then set two lines in `.env` — the deploy guide's "Use it" section shows the port-forward that makes this address reachable, and the key is `admin.apiKey` from [`deploy/values-single-node.yaml`](deploy/values-single-node.yaml):
+
    ```
    GROUNDX_BASE_URL=http://localhost:8080/api
    GROUNDX_API_KEY=<admin.apiKey from deploy/values-single-node.yaml>

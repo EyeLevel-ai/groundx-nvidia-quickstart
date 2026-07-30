@@ -60,10 +60,37 @@ WORKFLOW = {
     },
 }
 
-# Find or create the workflow by name
-r = requests.get(f"{BASE}/v1/workflow", headers=H, timeout=60)
-r.raise_for_status()  # a failed list must not silently create a duplicate
-match = next((w for w in r.json().get("workflows", []) if w.get("name") == "nvidia-nemotron"), None)
+# Reuse the workflow this script created last time. The id is cached locally so
+# re-runs are idempotent without depending on the workflow-list endpoint, which
+# is slow enough to time out.
+import pathlib
+import time
+
+CACHE = pathlib.Path(__file__).with_name(".nvidia-workflow-id")
+match = None
+if CACHE.exists():
+    wid_cached = CACHE.read_text().strip()
+    g = requests.get(f"{BASE}/v1/workflow/{wid_cached}", headers=H, timeout=60)
+    if g.ok:
+        match = {"workflowId": wid_cached}
+    else:
+        CACHE.unlink()  # stale (deleted elsewhere) — fall through and create
+
+if match is None:
+    # No cached id: try the list endpoint, but retry and never treat a failure as
+    # "not found" without saying so — that would silently create a duplicate.
+    listed = False
+    for attempt in range(3):
+        r = requests.get(f"{BASE}/v1/workflow", headers=H, timeout=60)
+        if r.ok:
+            match = next((w for w in r.json().get("workflows", []) if w.get("name") == "nvidia-nemotron"), None)
+            listed = True
+            break
+        if attempt < 2:
+            time.sleep(5 * (attempt + 1))
+    if not listed:
+        print(f"note: the workflow list endpoint timed out ({r.status_code}); creating a "
+              "fresh 'nvidia-nemotron' workflow and caching its id for next time.")
 if match:
     wid = match["workflowId"]
     r = requests.put(f"{BASE}/v1/workflow/{wid}", headers=H, json=WORKFLOW, timeout=30)
@@ -74,6 +101,7 @@ else:
     r.raise_for_status()
     wid = r.json()["workflow"]["workflowId"]
     print(f"created workflow nvidia-nemotron ({wid})")
+CACHE.write_text(wid)
 
 # Ensure the quickstart bucket exists, then assign the workflow to it
 gx = GroundX(api_key=GX_KEY, base_url=os.environ.get("GROUNDX_BASE_URL") or None)
