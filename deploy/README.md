@@ -1,6 +1,8 @@
 # GroundX on One GPU Machine, with NVIDIA's Hosted Nemotron
 
-GroundX runs inside your own machine; NVIDIA's hosted Nemotron handles document enrichment. Documents never leave your machine — only page images and text passages go to the model. (Running every model locally is a production option in the [main deployment repo](https://github.com/eyelevelai/groundx-on-prem), not here.) This build covers ingest and search; the quickstart's agent demo needs GroundX's hosted MCP tool server, which the single-node build doesn't include.
+GroundX runs inside your own machine; NVIDIA's hosted Nemotron handles document enrichment. Documents never leave your machine — only page images and text passages go to the model. (Running every model locally is a production option in the [main deployment repo](https://github.com/eyelevelai/groundx-on-prem), not here.)
+
+> **This build covers ingest and search — no agent demo.** The quickstart's agent demo needs GroundX's hosted MCP tool server, which the single-node build doesn't include. Everything else in the quickstart (scripts and notebook sections 1–6) works against it.
 
 ```mermaid
 flowchart LR
@@ -84,5 +86,5 @@ Then point the quickstart scripts at it: in `.env`, set `GROUNDX_BASE_URL=http:/
 
 ## Measured (July 2026, one 48GB L40S)
 
-- Document processing: a 114-page IRS instruction booklet fully processed in about an hour (~110 pages/hour) — measured on an earlier profile that also ran a local language model; this profile frees that model's ~19GB of GPU memory and doubles the vision-model workers, so expect better (not yet re-measured)
+- Document processing: a 114-page IRS instruction booklet fully processed in 62 minutes (~110 pages/hour). Measured on the previous profile; this profile should be faster (see the [sizing worksheet](../docs/sizing-worksheet.md)) — re-measurement pending
 - Search: ~3 seconds per query

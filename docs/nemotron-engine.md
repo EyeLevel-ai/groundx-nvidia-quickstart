@@ -13,7 +13,7 @@ Both carry the same engine fields — endpoint URL, model name, key, transport �
 
 Validated 2026-07-28 against `https://integrate.api.nvidia.com/v1` (OpenAI-compatible hosted NIM endpoints, free-trial API key).
 
-## Validated models + recipes
+### Validated models + recipes
 
 This repo uses two Nemotron models in two different roles — don't swap them:
 
@@ -26,7 +26,7 @@ Both use base URL `https://integrate.api.nvidia.com/v1` and `Authorization: Bear
 
 Verified for the agent LLM: `temperature: 0`, deterministic short completion, `finish_reason: stop`, clean `usage` block (36 total tokens for the smoke test).
 
-## Gotcha 1 — reasoning models return null `content` by default
+### Gotcha 1 — reasoning models return null `content` by default
 
 Nemotron's current flagship models are *reasoning* models. Without the toggle, the response places chain-of-thought in `message.reasoning` / `message.reasoning_content`, and if `max_tokens` is consumed by reasoning, **`message.content` is `null` with `finish_reason: "length"`**.
 
@@ -40,7 +40,7 @@ Token accounting note: reasoning tokens count in `usage` — cost/metering must 
 
 In this repo: the agent uses mitigation 2 (a generous `max_tokens` in `configs/groundx_agent.yml`); document processing uses `nano-vl-8b`, a non-reasoning model, so no toggle is needed there.
 
-## Gotcha 2 — the model catalog lists models that are not invocable
+### Gotcha 2 — the model catalog lists models that are not invocable
 
 `GET /v1/models` returned 102 models including `nvidia/llama-3.1-nemotron-70b-instruct`, but invoking that model returns `404 {"title":"Not Found","detail":"Function ... Not found"}`. **Pin models by verified invocation, not by catalog listing**, and re-verify pinned models before relying on them.
 
@@ -68,7 +68,3 @@ Two settings matter for extraction quality on a self-hosted machine:
 - **`service: openai-base64`** — images travel inside the request body. Required whenever the machine's image storage isn't reachable from the internet (a hosted model can't fetch internal URLs). Use plain `service: openai` only if your image URLs are externally accessible.
 
 The model in `engineId` must therefore be **vision-capable and verified-invocable** (see Gotcha 2). Text-only models like `llama-3.3-nemotron-super-49b-v1.5` are fine as an *agent's* language model (this repo's agent config) but not for image-based document enrichment.
-
-## Summary
-
-GroundX's language-model layer speaks the standard OpenAI-compatible API with a configurable endpoint, so pointing it at Nemotron is a configuration change. The one behavior to plan for: Nemotron's reasoning-family models need either the `/no_think` system message or a generous output-token budget, or responses come back empty (Gotcha 1 above).

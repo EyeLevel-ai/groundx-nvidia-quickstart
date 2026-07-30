@@ -34,7 +34,7 @@ python -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python scripts/nvidia_workflow.py
 ```
 
-GroundX **workflows** make every processing stage — summaries, keywords, the chunk instructions that turn tables and figures into searchable text, search-query generation — a configurable step that can run on any OpenAI-compatible model, per bucket, changed at runtime with an API call. This command points all of them at NVIDIA's vision-capable Nemotron; the rest of the mechanism (and two endpoint gotchas worth knowing) is in [docs/nemotron-engine.md](docs/nemotron-engine.md).
+GroundX **workflows** make every processing stage a runtime-configurable step; this command points them all at NVIDIA's vision-capable Nemotron. The mechanism — and two endpoint gotchas worth knowing — is in [docs/nemotron-engine.md](docs/nemotron-engine.md); [How it works](#how-it-works) below describes what the stages produce.
 
 **2. Load a document** (the sample is the IRS Form 1040 instructions — 100+ pages of dense tables; processing takes a few minutes, running on Nemotron):
 
@@ -58,7 +58,7 @@ Prefer a notebook? [`notebooks/quickstart.ipynb`](notebooks/quickstart.ipynb) wa
 
 ## Scenario B — self-hosted GroundX + NVIDIA models
 
-GroundX runs on your own GPU machine; documents never leave it. Your NVIDIA GPU runs GroundX's page-reading vision model and search reranker; NVIDIA's hosted Nemotron handles enrichment. **Scope:** Scenario B covers loading and search (scripts and notebook); the agent demo (`run_agent.sh`) connects to GroundX's hosted MCP tool server, which this single-node build doesn't include — an MCP service for self-hosted deployments lives on the [main deployment repo](https://github.com/eyelevelai/groundx-on-prem)'s roadmap.
+The payoff: the full notebook flow — cited answers with page and bounding-box provenance — against documents that never leave your machine. Your NVIDIA GPU runs GroundX's page-reading vision model and search reranker; NVIDIA's hosted Nemotron handles enrichment. **Scope:** Scenario B covers loading and search (scripts and notebook, sections 1–6); the agent demo (`run_agent.sh`) connects to GroundX's hosted MCP tool server, which this single-node build doesn't include — an MCP service for self-hosted deployments is tracked on the [main deployment repo](https://github.com/eyelevelai/groundx-on-prem)'s roadmap.
 
 1. Install on your machine, or let the AWS script create one: **[deploy/](deploy/)** — one required input, ~45 minutes. The NVIDIA model choice lives in Helm values here (deployment configuration); workflows work on top of it exactly as in Scenario A.
 2. Run the quickstart scripts **on that machine**, pointing them at the local API with one line in `.env` (the deploy guide's "Use it" section shows the port-forward that makes this address work):
@@ -88,7 +88,7 @@ flowchart LR
     S -- "ranked passages: text, score,<br/>page + exact location" --> A --> R["Cited answer"]
 ```
 
-**Why this design.** The vision model reads layout the way a person does, which is why accuracy holds on documents that break text-only pipelines. In production at Air France/KLM, that meant a customer-measured 96.2% accuracy against a 60% target; EyeLevel's [head-to-head test](https://www.eyelevel.ai/post/most-accurate-rag) is public, and a preregistered head-to-head against NVIDIA's own RAG blueprint — rules and [win criteria](https://github.com/EyeLevel-ai/groundx-doc-eval-harness/blob/main/preregistration/decision-rule.md) locked before any system runs — is underway in the [eval harness repo](https://github.com/EyeLevel-ai/groundx-doc-eval-harness). Because pages become small typed elements first, compact fast models handle the enrichment — no frontier-scale model needed at ingest. And the same product runs as cloud or self-hosted ([public Helm chart](https://github.com/eyelevelai/groundx-on-prem), air-gap capable), configured by Helm values at deployment and by workflows at runtime.
+**Why this design.** The vision model reads layout the way a person does, which is why accuracy holds on documents that break text-only pipelines. In production at Air France/KLM, it exceeded the customer's 60% accuracy target; EyeLevel's [head-to-head test](https://www.eyelevel.ai/post/most-accurate-rag) is public, and a preregistered head-to-head against NVIDIA's own RAG blueprint is taking shape in the [eval harness repo](https://github.com/EyeLevel-ai/groundx-doc-eval-harness) — rules drafted, lock pending NVIDIA's review of the corpus and questions. The pre-committed [win bar](https://github.com/EyeLevel-ai/groundx-doc-eval-harness/blob/main/preregistration/decision-rule.md): "a win may be claimed only when the bottom of GroundX's accuracy confidence range sits above the top of the comparison system's range, according to both graders independently." Because pages become small typed elements first, compact fast models handle the enrichment — no frontier-scale model needed at ingest. And the same product runs as cloud or self-hosted ([public Helm chart](https://github.com/eyelevelai/groundx-on-prem), air-gap capable), configured by Helm values at deployment and by workflows at runtime.
 
 ## Where your data goes
 
@@ -119,7 +119,7 @@ Then ask in your own words — *"Why is my document stuck in processing?"*, *"Cr
 - [GPU sizing](docs/sizing-worksheet.md) — measured throughput and how document volume converts to GPU count
 - [Running GroundX on NVIDIA models](docs/nemotron-engine.md) — the two configuration surfaces and endpoint findings
 - [Preregistered eval vs NVIDIA's RAG blueprint](https://github.com/EyeLevel-ai/groundx-doc-eval-harness) — a four-system head-to-head with the rules checksummed before any system runs
-- [AI-Q knowledge backend](aiq/) — GroundX as a retrieval backend for NVIDIA's AI-Q research agent, written to its documented plug-in contract
+- [AI-Q knowledge backend](aiq/) — GroundX as a retrieval backend for NVIDIA's AI-Q research agent, written to its documented plug-in contract *(experimental; not yet validated inside an AI-Q workflow)*
 
 ## Troubleshooting
 
