@@ -28,6 +28,9 @@ def check(name: str, ok: bool, detail: str = ""):
         FAILURES.append(name)
 
 
+# 0. package is complete (copying groundx_backend/ must yield an importable package)
+check("groundx_backend/__init__.py exists", (HERE / "groundx_backend" / "__init__.py").is_file())
+
 # 1. adapter compiles
 try:
     py_compile.compile(str(HERE / "groundx_backend" / "adapter.py"), doraise=True)

@@ -1,8 +1,8 @@
-# GroundX as an AI-Q Knowledge Backend
+# GroundX as an AI-Q Knowledge Backend — experimental preview
 
 A working retriever adapter that plugs GroundX into NVIDIA's [AI-Q research agent](https://github.com/NVIDIA-AI-Blueprints/aiq) through its published knowledge-layer plug-in contract. Collections map to GroundX buckets; every chunk carries page-level provenance from GroundX bounding boxes, satisfying the knowledge layer's citation contract.
 
-> **Status:** smoke-checked live (5/5) against the contract as of July 2026 — the adapter compiles, the config delta parses, and a live GroundX search returns every field the adapter maps (`score`, `fileName`, `boundingBoxes.pageNumber`). Not yet validated inside a running AI-Q workflow; that needs one review slot with an AI-Q checkout.
+> **Status (July 2026):** written against AI-Q's published contract and checked by `smoke_test.py`, which verifies the package is importable, the adapter compiles, the config delta parses with the required keys, the backend name is `groundx`, and a live GroundX search returns every field the adapter maps (`score`, `fileName`, `boundingBoxes.pageNumber`). **Installing it requires hand-editing an AI-Q checkout, and it has not been run inside a live AI-Q workflow** — that needs a review slot with someone who has one.
 
 Two files:
 
