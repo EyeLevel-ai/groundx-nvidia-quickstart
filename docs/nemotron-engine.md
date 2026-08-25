@@ -20,7 +20,7 @@ This repo uses two Nemotron models in two different roles — don't swap them:
 | Role | Model | Key settings |
 |---|---|---|
 | **Agent LLM** (text reasoning, `configs/groundx_agent.yml`) | `nvidia/llama-3.3-nemotron-super-49b-v1.5` | `/no_think` system message when you want plain content; otherwise a generous `max_tokens` (Gotcha 1) |
-| **Document-processing engine** (vision, the `engines` block / workflows) | `nvidia/llama-3.1-nemotron-nano-vl-8b-v1` | Must be vision-capable; `vision: true` and `service: openai-base64` on self-hosted (see below) |
+| **Document-processing engine** (vision, the `engines` block / workflows) | `nvidia/llama-3.1-nemotron-nano-vl-8b-v1` | Must be vision-capable; use `service: hosted` with public image URLs and `service: openai-base64` on self-hosted (see below) |
 
 Both use base URL `https://integrate.api.nvidia.com/v1` and `Authorization: Bearer $NVIDIA_API_KEY`; both verified by direct invocation on 2026-07-28.
 
@@ -63,6 +63,6 @@ engines:
 Two settings matter for extraction quality on a self-hosted machine:
 
 - **`vision: true`** — enrichment sends page images, not just text. Without images, charts and figure-heavy pages extract poorly.
-- **`service: openai-base64`** — images travel inside the request body. Required whenever the machine's image storage isn't reachable from the internet (a hosted model can't fetch internal URLs). Use plain `service: openai` only if your image URLs are externally accessible.
+- **`service: openai-base64`** — images travel inside the request body. Required whenever the machine's image storage isn't reachable from the internet (a hosted model can't fetch internal URLs). Use `service: hosted` with the explicit NVIDIA URL and key when image URLs are externally accessible. `service: openai` opts into OpenAI-specific request fields that NVIDIA does not support.
 
 The model in `engineId` must therefore be **vision-capable and verified-invocable** (see Gotcha 2). Text-only models like `llama-3.3-nemotron-super-49b-v1.5` are fine as an *agent's* language model (this repo's agent config) but not for image-based document enrichment.

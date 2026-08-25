@@ -32,9 +32,9 @@ BASE = (os.environ.get("GROUNDX_BASE_URL") or "https://api.groundx.ai/api").rstr
 MODEL = os.environ.get("NVIDIA_INGEST_MODEL", "nvidia/llama-3.1-nemotron-nano-vl-8b-v1")
 H = {"X-API-Key": GX_KEY, "Content-Type": "application/json"}
 
-# Cloud artifacts are publicly accessible -> reference images by URL ("openai").
+# Cloud artifacts are publicly accessible -> reference images by URL ("hosted").
 # Self-hosted artifacts are internal -> embed images base64 ("openai-base64").
-SERVICE = "openai-base64" if os.environ.get("GROUNDX_BASE_URL") else "openai"
+SERVICE = "openai-base64" if os.environ.get("GROUNDX_BASE_URL") else "hosted"
 
 # One engine definition, reused by every step.
 ENGINE = {
